@@ -44,8 +44,14 @@ namespace KasPriceChart
 
         public List<DataPoint> GetData()
         {
-            return _dataPoints;
+            _dataPoints.Sort((x, y) =>
+            {
+                return DateTime.Compare(x.Timestamp, y.Timestamp);
+            });
+
+            return new List<DataPoint>(_dataPoints); // Returning a new list to prevent external modifications
         }
+
 
         public void SetData(List<DataPoint> dataPoints)
         {

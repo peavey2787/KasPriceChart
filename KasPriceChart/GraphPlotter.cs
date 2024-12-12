@@ -223,15 +223,24 @@ namespace KasPriceChart
                 ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY" // Display tooltips with full datetime info in 12-hour format
             };
 
+            double latestPrice = 0;
+            double latestHashrate = 0;
+            DateTime latestTimestamp = DateTime.Now;
             foreach (var point in dataPoints)
             {
                 if (point.Price > 0)
                 {
                     seriesPrice.Points.AddXY(point.Timestamp, point.Price);
+                    latestPrice = point.Price;
                 }
                 if (point.Hashrate > 0)
                 {
                     seriesHashrate.Points.AddXY(point.Timestamp, point.Hashrate); 
+                    latestHashrate = point.Hashrate;
+                }
+                if (point.Timestamp != null)
+                {
+                    latestTimestamp = point.Timestamp;
                 }
             }
 
@@ -249,27 +258,25 @@ namespace KasPriceChart
             // Update labels with the latest data point
             if (dataPoints.Count > 0)
             {
-                var latestDataPoint = dataPoints[dataPoints.Count - 1];
-                if (latestDataPoint != null && latestDataPoint.Price > 0)
+                if (latestPrice > 0)
                 {
-                    _lblCurrentPrice.Text = $"Price: ${latestDataPoint.Price:F4}";
+                    _lblCurrentPrice.Text = $"Price: ${latestPrice:F4}";
                 }
                 else
                 {
                     _lblCurrentPrice.Text = "Error Fetching Price";
                 }
-                if (latestDataPoint != null && latestDataPoint.Hashrate > 0)
+                if (latestHashrate > 0)
                 {
-                    _lblCurrentHashrate.Text = $"Hashrate: {FormatHashrateGetNumber(latestDataPoint.Hashrate)} {FormatHashrateGetLabel(latestDataPoint.Hashrate)}";
+                    _lblCurrentHashrate.Text = $"Hashrate: {FormatHashrateGetNumber(latestHashrate)} {FormatHashrateGetLabel(latestHashrate)}";
                 }
                 else
                 {
                     _lblCurrentHashrate.Text = "Error Fetching Hashrate";
                 }
-                if (latestDataPoint != null &&  latestDataPoint.Timestamp != null)
-                {
-                    _lblLastTimeStamp.Text = $"Last Update: {latestDataPoint.Timestamp:dd-MM-yyyy hh:mm:ss tt}";
-                }                
+
+                _lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:dd-MM-yyyy hh:mm:ss tt}";
+                              
             }
         }
 
