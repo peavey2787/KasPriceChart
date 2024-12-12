@@ -56,7 +56,7 @@ namespace KasPriceChart
             chart.BackColor = backgroundColor;
 
             // Remove chart border
-            chart.BorderlineColor = backgroundColor; 
+            chart.BorderlineColor = backgroundColor;
             chart.BorderlineDashStyle = ChartDashStyle.NotSet;
             chart.BorderlineWidth = 0;
 
@@ -71,11 +71,11 @@ namespace KasPriceChart
                 Font = new Font("Arial", 12, FontStyle.Bold)
             });
 
-            // Enable zooming and scrolling
+            // Enable zooming and scrolling without showing scroll bars
             chart.ChartAreas[0].AxisX.ScaleView.Zoomable = true;
             chart.ChartAreas[0].AxisY.ScaleView.Zoomable = true;
-            chart.ChartAreas[0].AxisX.ScrollBar.IsPositionedInside = true;
-            chart.ChartAreas[0].AxisY.ScrollBar.IsPositionedInside = true;
+            chart.ChartAreas[0].AxisX.ScrollBar.Enabled = false; // Hide X-axis scroll bar
+            chart.ChartAreas[0].AxisY.ScrollBar.Enabled = false; // Hide Y-axis scroll bar
 
             // Enable panning
             chart.ChartAreas[0].CursorX.IsUserEnabled = false;
@@ -88,7 +88,7 @@ namespace KasPriceChart
                 Color = lineColor,
                 MarkerStyle = MarkerStyle.Circle, // Show data points as dots
                 MarkerSize = 5, // Adjust the size of the dots
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY" // Display tooltips with full datetime info in 12-hour format
+                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
             };
 
             chart.Series.Add(exampleSeries); // This can be an initial setup, actual data will overwrite
@@ -112,6 +112,7 @@ namespace KasPriceChart
             chart.ChartAreas[0].AxisX.LabelStyle.Format = "dd-MM-yyyy\nhh:mm:ss tt";
             chart.ChartAreas[0].AxisX.IntervalAutoMode = IntervalAutoMode.VariableCount;
         }
+
 
         #region Mouse Events
         private void Chart_MouseWheel(object sender, MouseEventArgs e)
@@ -213,7 +214,7 @@ namespace KasPriceChart
                 Color = _priceLineColor, // Use stored color
                 MarkerStyle = MarkerStyle.Circle, // Show data points as dots
                 MarkerSize = 5, // Adjust the size of the dots
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY" // Display tooltips with full datetime info in 12-hour format
+                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
             };
 
             var seriesHashrate = new Series("Hashrate")
@@ -222,7 +223,7 @@ namespace KasPriceChart
                 Color = _hashrateLineColor, // Use stored color
                 MarkerStyle = MarkerStyle.Circle, // Show data points as dots
                 MarkerSize = 5, // Adjust the size of the dots
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY" // Display tooltips with full datetime info in 12-hour format
+                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
             };
 
             double latestPrice = 0;
@@ -356,29 +357,46 @@ namespace KasPriceChart
                     throw new ArgumentException("Invalid time unit");
             }
 
+            // Define the allowable variance
+            TimeSpan variance = TimeSpan.FromMinutes(2);
+
             // Filter data points based on the interval
             List<DataPoint> filteredDataPoints = new List<DataPoint>();
 
             if (dataPoints.Count > 0)
             {
-                DateTime previousTimestamp = dataPoints[0].Timestamp; // Start with the first data point
-                filteredDataPoints.Add(dataPoints[0]);
-
-                for (int i = 1; i < dataPoints.Count; i++)
+                for (int i = 0; i < dataPoints.Count; i++)
                 {
-                    TimeSpan difference = dataPoints[i].Timestamp - previousTimestamp;
+                    bool foundMatch = false;
 
-                    // Check if the difference is within the interval 
-                    if (difference >= interval  && difference <= interval )
+                    DateTime previousTimestamp = dataPoints[i].Timestamp;
+
+                    for (int j = i + 1; j < dataPoints.Count; j++)
                     {
-                        filteredDataPoints.Add(dataPoints[i]);
-                        previousTimestamp = dataPoints[i].Timestamp;
+                        TimeSpan difference = dataPoints[j].Timestamp - previousTimestamp;
+
+                        // Check if the difference matches the interval +/- variance
+                        if (difference >= interval - variance && difference <= interval + variance)
+                        {
+                            filteredDataPoints.Add(dataPoints[j]);
+                            previousTimestamp = dataPoints[j].Timestamp;
+                            i = j - 1; // Move the outer loop to the current position
+                            foundMatch = true;
+                            break;
+                        }
+                    }
+
+                    // If no match found within the interval, move to the next point
+                    if (!foundMatch && i < dataPoints.Count - 1)
+                    {
+                        previousTimestamp = dataPoints[i + 1].Timestamp;
                     }
                 }
             }
 
             return filteredDataPoints;
         }
+
 
 
 
