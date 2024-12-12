@@ -4,7 +4,7 @@
 
 
 <div style="color: red; font-weight: bold;">
-⚠️ WARNING: To retain your saved data when updating versions be sure to make a backup of your current master.csv file and then replace it with the default one once you've downloaded the updated files. Maybe I'll get around to making it easier to update.
+⚠️ WARNING: To retain your saved data when updating versions be sure to make a backup of your current master.csv file and then replace the default one with it once you've downloaded the updated files. Maybe I'll get around to making it easier to update.
 </div>
 
 # How to use
