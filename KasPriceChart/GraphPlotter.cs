@@ -147,7 +147,6 @@ namespace KasPriceChart
             catch { }
         }
 
-
         private void Chart_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -200,8 +199,11 @@ namespace KasPriceChart
         #endregion
 
 
-        public void UpdateGraph(List<DataPoint> dataPoints)
+        public void UpdateGraph(List<DataPoint> dataPoints, string selectedTimespan)
         {
+            // Filter data points based on the selected timespan
+            List<DataPoint> filteredDataPoints = FilterDataPoints(dataPoints, selectedTimespan);
+
             _priceChart.Series.Clear();
             _hashrateChart.Series.Clear();
 
@@ -226,7 +228,8 @@ namespace KasPriceChart
             double latestPrice = 0;
             double latestHashrate = 0;
             DateTime latestTimestamp = DateTime.Now;
-            foreach (var point in dataPoints)
+
+            foreach (var point in filteredDataPoints)
             {
                 if (point.Price > 0)
                 {
@@ -235,7 +238,7 @@ namespace KasPriceChart
                 }
                 if (point.Hashrate > 0)
                 {
-                    seriesHashrate.Points.AddXY(point.Timestamp, point.Hashrate); 
+                    seriesHashrate.Points.AddXY(point.Timestamp, point.Hashrate);
                     latestHashrate = point.Hashrate;
                 }
                 if (point.Timestamp != null)
@@ -256,7 +259,7 @@ namespace KasPriceChart
             _hashrateChart.Invalidate();
 
             // Update labels with the latest data point
-            if (dataPoints.Count > 0)
+            if (filteredDataPoints.Count > 0)
             {
                 if (latestPrice > 0)
                 {
@@ -276,9 +279,110 @@ namespace KasPriceChart
                 }
 
                 _lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:dd-MM-yyyy hh:mm:ss tt}";
-                              
             }
         }
+        private List<DataPoint> FilterDataPoints(List<DataPoint> dataPoints, string timespan)
+        {
+            // Validate and parse the timespan string
+            var match = System.Text.RegularExpressions.Regex.Match(timespan, @"^(\d+)\s*(minute|minutes|mins|hour|hours|hr|hrs|day|days|week|weeks|month|months|year|years)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!match.Success)
+            {
+                // Return all data points if the timespan format is invalid
+                return dataPoints;
+            }
+
+            // Extract number and unit from the validated timespan
+            int number = int.Parse(match.Groups[1].Value);
+            string unit = match.Groups[2].Value.ToLower();
+
+            // Convert unit to full name with proper capitalization
+            string fullUnit;
+            switch (unit)
+            {
+                case "minute":
+                case "minutes":
+                case "mins":
+                    fullUnit = "Minutes";
+                    break;
+                case "hour":
+                case "hours":
+                case "hr":
+                case "hrs":
+                    fullUnit = "Hours";
+                    break;
+                case "day":
+                case "days":
+                    fullUnit = "Days";
+                    break;
+                case "week":
+                case "weeks":
+                    fullUnit = "Weeks";
+                    break;
+                case "month":
+                case "months":
+                    fullUnit = "Months";
+                    break;
+                case "year":
+                case "years":
+                    fullUnit = "Years";
+                    break;
+                default:
+                    throw new ArgumentException("Invalid time unit");
+            }
+
+            // Calculate the interval based on the parsed number and unit
+            TimeSpan interval;
+            switch (fullUnit)
+            {
+                case "Minutes":
+                    interval = TimeSpan.FromMinutes(number);
+                    break;
+                case "Hours":
+                    interval = TimeSpan.FromHours(number);
+                    break;
+                case "Days":
+                    interval = TimeSpan.FromDays(number);
+                    break;
+                case "Weeks":
+                    interval = TimeSpan.FromDays(number * 7);
+                    break;
+                case "Months":
+                    interval = TimeSpan.FromDays(number * 30);
+                    break;
+                case "Years":
+                    interval = TimeSpan.FromDays(number * 365);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid time unit");
+            }
+
+            // Filter data points based on the interval
+            List<DataPoint> filteredDataPoints = new List<DataPoint>();
+
+            if (dataPoints.Count > 0)
+            {
+                DateTime previousTimestamp = dataPoints[0].Timestamp; // Start with the first data point
+                filteredDataPoints.Add(dataPoints[0]);
+
+                for (int i = 1; i < dataPoints.Count; i++)
+                {
+                    TimeSpan difference = dataPoints[i].Timestamp - previousTimestamp;
+
+                    // Check if the difference is within the interval 
+                    if (difference >= interval  && difference <= interval )
+                    {
+                        filteredDataPoints.Add(dataPoints[i]);
+                        previousTimestamp = dataPoints[i].Timestamp;
+                    }
+                }
+            }
+
+            return filteredDataPoints;
+        }
+
+
+
+
 
         public void ShowLegends()
         {
@@ -292,7 +396,6 @@ namespace KasPriceChart
                 _hashrateChart.Legends.Add(new Legend { Enabled = true });
             }
         }
-
 
         private string FormatHashrateGetLabel(double hashrate)
         {
@@ -308,6 +411,7 @@ namespace KasPriceChart
 
             return $"{units[unitIndex]}";
         }
+
         private string FormatHashrateGetNumber(double hashrate)
         {
             string[] units = { "H/s", "KH/s", "MH/s", "GH/s", "TH/s", "PH/s", "EH/s" };

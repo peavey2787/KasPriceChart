@@ -58,6 +58,7 @@
             this.tabPagePrice = new System.Windows.Forms.TabPage();
             this.tabPageHashrate = new System.Windows.Forms.TabPage();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.cmbViewTimspan = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -167,6 +168,7 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.cmbViewTimspan);
             this.groupBox1.Controls.Add(this.chkAutoStart);
             this.groupBox1.Controls.Add(this.groupBox2);
             this.groupBox1.Controls.Add(this.chkCoinCodex);
@@ -313,6 +315,30 @@
             this.tabPageHashrate.Text = "Hashrate";
             this.tabPageHashrate.UseVisualStyleBackColor = true;
             // 
+            // cmbViewTimspan
+            // 
+            this.cmbViewTimspan.FormattingEnabled = true;
+            this.cmbViewTimspan.Items.AddRange(new object[] {
+            "All Data",
+            "5 Minutes",
+            "15 Minutes",
+            "30 Minutes",
+            "1 Hour",
+            "4 Hour",
+            "12 Hour",
+            "1 Day",
+            "1 Week",
+            "2 Weeks",
+            "1 Month",
+            "1 Year"});
+            this.cmbViewTimspan.Location = new System.Drawing.Point(489, 43);
+            this.cmbViewTimspan.Name = "cmbViewTimspan";
+            this.cmbViewTimspan.Size = new System.Drawing.Size(121, 21);
+            this.cmbViewTimspan.TabIndex = 14;
+            this.cmbViewTimspan.Text = "All Data";
+            this.cmbViewTimspan.SelectedIndexChanged += new System.EventHandler(this.cmbViewTimspan_SelectedIndexChanged);
+            this.cmbViewTimspan.TextUpdate += new System.EventHandler(this.cmbViewTimspan_TextUpdate);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -363,6 +389,7 @@
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.CheckBox chkAutoStart;
+        private System.Windows.Forms.ComboBox cmbViewTimspan;
     }
 }
 

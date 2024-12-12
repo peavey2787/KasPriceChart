@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -53,8 +54,8 @@ namespace KasPriceChart
         {
             LoadControlStates();
 
-            string masterFilePath = "master.csv";
-
+            string masterFilePath = Path.Combine(Directory.GetCurrentDirectory(), "master.csv");
+            
             if (CSVHandler.MasterFileExists(masterFilePath))
             {
                 var dataPoints = CSVHandler.ImportData(new[] { masterFilePath });
@@ -77,6 +78,8 @@ namespace KasPriceChart
             {
                 btnStart.PerformClick();
             }
+
+            ShowTheChart();
         }
         #endregion
 
@@ -176,7 +179,7 @@ namespace KasPriceChart
                     SaveData();
                 }
 
-                _graphPlotter.UpdateGraph(_dataManager.GetData());
+                ShowTheChart();
             }
         }
 
@@ -211,7 +214,7 @@ namespace KasPriceChart
         private void chkAutoStart_CheckedChanged(object sender, EventArgs e)
         {
             SaveControlStates();
-        }
+        }        
         #endregion
 
         private void txtInterval_TextChanged(object sender, EventArgs e)
@@ -263,22 +266,25 @@ namespace KasPriceChart
                 _countdownTime = (int)Math.Ceiling(remainingSeconds);
             }
 
-            _graphPlotter.UpdateGraph(_dataManager.GetData());
+            ShowTheChart();
 
             return success;
         }
+
         private void SaveData()
         {
             // Save updated data to master.csv
             var data = _dataManager.GetData();
             CSVHandler.ExportData(data, "master.csv");
         }
+
         private void SaveControlStates()
         {
             AppSettings.Save("UpdateInterval", txtInterval.Text);
             AppSettings.Save("UseOnlyUploadedData", chkUseOnlyUploadedData.Checked);
             AppSettings.Save("AutoStart", chkAutoStart.Checked);
         }
+
         private void LoadControlStates()
         {
             var updateInterval = AppSettings.Load<string>("UpdateInterval");
@@ -293,6 +299,7 @@ namespace KasPriceChart
             var someOtherCheckbox = AppSettings.Load<bool>("AutoStart");
             chkAutoStart.Checked = someOtherCheckbox;
         }
+
         private void LoadLastFetchTime()
         {
             var lastFetchTimeString = AppSettings.Load<string>("LastFetchTime");
@@ -302,8 +309,22 @@ namespace KasPriceChart
             }
         }
 
+        private void ShowTheChart()
+        {
+            string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
+
+            _graphPlotter.UpdateGraph(_dataManager.GetData(), selectedTimespan);
+        }
         #endregion
 
+        private async void cmbViewTimspan_TextUpdate(object sender, EventArgs e)
+        {
+            await FetchData();
+        }
 
+        private async void cmbViewTimspan_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            await FetchData();
+        }
     }
 }
