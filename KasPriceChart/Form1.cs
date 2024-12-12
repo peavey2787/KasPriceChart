@@ -40,8 +40,7 @@ namespace KasPriceChart
             btnStart.Tag = "start";
             LoadLastFetchTime();
 
-            toolTip1.SetToolTip(chkUseOnlyUploadedData, "When checked the chart will only use the imported data set, but BE WARNED: Keep this ckecked if you don't want it to overwrite your main data set (master.csv)");
-            toolTip1.SetToolTip(chkCoinCodex, "When checked the app will use the specific code to extract \n any columns with 'open' in their name as the open price for the start date \n and 'close' for the close price for the end date from the imported .csv \n You can download free historical data from \n https://coincodex.com/crypto/kaspa/historical-data/");
+            toolTip1.SetToolTip(chkUseOnlyUploadedData, "When checked the chart will only use the imported data set, but BE WARNED: Keep this ckecked if you don't want it to overwrite your main data set (master.csv)");            
             toolTip1.SetToolTip(btnImport, "Import custom data sets to merge with your current data set (master.csv) and continue adding real-time data or optionally just use the imported data");
             toolTip1.SetToolTip(btnExport, "Export your current data set (master.csv) to be used later");
             toolTip1.SetToolTip(lblInterval, "The time it takes between attempts to get new real-time data");
@@ -157,16 +156,7 @@ namespace KasPriceChart
             {
                 List<DataPoint> uploadedData;
 
-                if (chkCoinCodex.Checked)
-                {
-                    // Use method for CoinCodex format
-                    uploadedData = CSVHandler.ConvertAndImportCoinCodexCSV(openFileDialog.FileName);
-                }
-                else
-                {
-                    // Use the original ImportData method
-                    uploadedData = CSVHandler.ImportData(openFileDialog.FileNames);
-                }
+                uploadedData = CSVHandler.ImportData(openFileDialog.FileNames);                
 
                 bool useOnlyUploaded = chkUseOnlyUploadedData.Checked;
                 if (useOnlyUploaded)

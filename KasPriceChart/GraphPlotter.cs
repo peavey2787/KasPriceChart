@@ -111,6 +111,9 @@ namespace KasPriceChart
             // Format x-axis labels to show date and time on separate lines
             chart.ChartAreas[0].AxisX.LabelStyle.Format = "dd-MM-yyyy\nhh:mm:ss tt";
             chart.ChartAreas[0].AxisX.IntervalAutoMode = IntervalAutoMode.VariableCount;
+
+            // Format y-axis labels to show values with 4 decimal places
+            chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";
         }
 
 
@@ -124,6 +127,8 @@ namespace KasPriceChart
             try
             {
                 double zoomFactor = 0.5; // Adjust this value to make zooming more gradual
+                double minZoomSize = 0.01; // Minimum zoom size to prevent zooming out when zooming in
+
                 double xMin = xAxis.ScaleView.ViewMinimum;
                 double xMax = xAxis.ScaleView.ViewMaximum;
                 double yMin = yAxis.ScaleView.ViewMinimum;
@@ -136,8 +141,12 @@ namespace KasPriceChart
 
                 if (e.Delta > 0) // Zoom in
                 {
-                    xAxis.ScaleView.Zoom(posXStart, posXFinish);
-                    yAxis.ScaleView.Zoom(posYStart, posYFinish);
+                    // Ensure the zoom range is within the minimum zoom size
+                    if ((posXFinish - posXStart) > minZoomSize && (posYFinish - posYStart) > minZoomSize)
+                    {
+                        xAxis.ScaleView.Zoom(posXStart, posXFinish);
+                        yAxis.ScaleView.Zoom(posYStart, posYFinish);
+                    }
                 }
                 else if (e.Delta < 0) // Zoom out
                 {
@@ -145,8 +154,12 @@ namespace KasPriceChart
                     yAxis.ScaleView.ZoomReset();
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Log or handle exception as needed
+            }
         }
+
 
         private void Chart_MouseDown(object sender, MouseEventArgs e)
         {
@@ -213,7 +226,7 @@ namespace KasPriceChart
                 ChartType = SeriesChartType.Line,
                 Color = _priceLineColor, // Use stored color
                 MarkerStyle = MarkerStyle.Circle, // Show data points as dots
-                MarkerSize = 5, // Adjust the size of the dots
+                MarkerSize = 10, // Adjust the size of the dots
                 ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
             };
 
@@ -222,7 +235,7 @@ namespace KasPriceChart
                 ChartType = SeriesChartType.Line,
                 Color = _hashrateLineColor, // Use stored color
                 MarkerStyle = MarkerStyle.Circle, // Show data points as dots
-                MarkerSize = 5, // Adjust the size of the dots
+                MarkerSize = 10, // Adjust the size of the dots
                 ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
             };
 
@@ -396,8 +409,6 @@ namespace KasPriceChart
 
             return filteredDataPoints;
         }
-
-
 
 
 

@@ -51,7 +51,6 @@
             this.lblLastTimeStamp = new System.Windows.Forms.Label();
             this.lblCurrentPrice = new System.Windows.Forms.Label();
             this.lblCurrentHashrate = new System.Windows.Forms.Label();
-            this.chkCoinCodex = new System.Windows.Forms.CheckBox();
             this.chkUseOnlyUploadedData = new System.Windows.Forms.CheckBox();
             this.chart2 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.tabControl1 = new System.Windows.Forms.TabControl();
@@ -110,7 +109,7 @@
             // 
             this.btnImport.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnImport.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.btnImport.Location = new System.Drawing.Point(672, 37);
+            this.btnImport.Location = new System.Drawing.Point(707, 37);
             this.btnImport.Name = "btnImport";
             this.btnImport.Size = new System.Drawing.Size(58, 23);
             this.btnImport.TabIndex = 4;
@@ -171,7 +170,6 @@
             this.groupBox1.Controls.Add(this.cmbViewTimspan);
             this.groupBox1.Controls.Add(this.chkAutoStart);
             this.groupBox1.Controls.Add(this.groupBox2);
-            this.groupBox1.Controls.Add(this.chkCoinCodex);
             this.groupBox1.Controls.Add(this.chkUseOnlyUploadedData);
             this.groupBox1.Controls.Add(this.btnExport);
             this.groupBox1.Controls.Add(this.lblRefreshIn);
@@ -243,21 +241,10 @@
             this.lblCurrentHashrate.TabIndex = 14;
             this.lblCurrentHashrate.Text = "Current Hashrate:";
             // 
-            // chkCoinCodex
-            // 
-            this.chkCoinCodex.AutoSize = true;
-            this.chkCoinCodex.Location = new System.Drawing.Point(672, 62);
-            this.chkCoinCodex.Name = "chkCoinCodex";
-            this.chkCoinCodex.Size = new System.Drawing.Size(83, 17);
-            this.chkCoinCodex.TabIndex = 11;
-            this.chkCoinCodex.Text = "CoinCodex?";
-            this.chkCoinCodex.UseVisualStyleBackColor = true;
-            this.chkCoinCodex.CheckedChanged += new System.EventHandler(this.chkCoinCodex_CheckedChanged);
-            // 
             // chkUseOnlyUploadedData
             // 
             this.chkUseOnlyUploadedData.AutoSize = true;
-            this.chkUseOnlyUploadedData.Location = new System.Drawing.Point(672, 80);
+            this.chkUseOnlyUploadedData.Location = new System.Drawing.Point(663, 66);
             this.chkUseOnlyUploadedData.Name = "chkUseOnlyUploadedData";
             this.chkUseOnlyUploadedData.Size = new System.Drawing.Size(144, 17);
             this.chkUseOnlyUploadedData.TabIndex = 10;
@@ -385,7 +372,6 @@
         private System.Windows.Forms.Label lblCurrentPrice;
         private System.Windows.Forms.Label lblCurrentHashrate;
         private System.Windows.Forms.Label lblLastTimeStamp;
-        private System.Windows.Forms.CheckBox chkCoinCodex;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.CheckBox chkAutoStart;
