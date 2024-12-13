@@ -169,6 +169,11 @@ namespace KasPriceChart
             _hashrateChart.ChartAreas[0].AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
             _hashrateChart.ChartAreas[0].AxisY.Interval = 0; // Reset interval to allow automatic adjustment
 
+
+            // Reset zoom to fully zoomed out
+            ResetZoom(_priceChart);
+            ResetZoom(_hashrateChart);
+
             _priceChart.Invalidate();
             _hashrateChart.Invalidate();
         }
@@ -253,6 +258,9 @@ namespace KasPriceChart
             _priceChart.Series.Add(supportSeries);
             _priceChart.Series.Add(resistanceSeries);
             _priceChart.Series.Add(fairPriceSeries);
+
+            // Reset zoom to fully zoomed out
+            ResetZoom(_priceChart);
 
             _priceChart.Invalidate();
 
@@ -499,6 +507,16 @@ namespace KasPriceChart
             }
 
             return report.ToString();
+        }
+
+        private void ResetZoom(Chart chart)
+        {
+            var chartArea = chart.ChartAreas[0];
+
+            chartArea.AxisX.ScaleView.ZoomReset();
+            chartArea.AxisY.ScaleView.ZoomReset();
+
+            chartArea.RecalculateAxesScale();
         }
 
         #endregion
