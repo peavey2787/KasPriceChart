@@ -281,6 +281,9 @@ namespace KasPriceChart
 
             ResetZoom(chart);
             chart.Invalidate();
+
+            string report = GenerateReport(dataPoints, genesisDate, exponent, fairPriceConstant, rSquared, logDeltaGB, logPrices, sumX, sumY, sumXY, sumX2, sumY2);
+            richTextBoxLog.Text = report;
         }
         #endregion
 
