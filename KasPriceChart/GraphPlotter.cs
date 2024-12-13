@@ -100,6 +100,10 @@ namespace KasPriceChart
             chart.MouseMove += Chart_MouseMove;
             chart.MouseUp += Chart_MouseUp;
 
+            // Change cursor on mouse enter/leave
+            chart.MouseEnter += Chart_MouseEnter;
+            chart.MouseLeave += Chart_MouseLeave;
+
             // Hide legends
             chart.Legends.Clear();
             if (showLegend)
@@ -118,6 +122,7 @@ namespace KasPriceChart
             chart.ChartAreas[0].AxisY.IsLogarithmic = true;
             chart.ChartAreas[0].AxisY.LogarithmBase = 10;
         }
+
         #endregion
 
 
@@ -226,6 +231,13 @@ namespace KasPriceChart
 
             // Prepare the chart data
             var (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices) = DataManager.PrepareChartData(genesisDate, dataPoints, exponent, fairPriceConstant * Math.Pow(10, -0.25), fairPriceConstant * Math.Pow(10, 0.25), fairPriceConstant, endDate);
+
+            // Calculate yMin and yMax from the projected values
+            double yMin = Math.Min(supportPrices.Min(), Math.Min(resistancePrices.Min(), fairPrices.Min())); double yMax = Math.Max(supportPrices.Max(), Math.Max(resistancePrices.Max(), fairPrices.Max())); 
+            
+            // Set the y-axis range to prevent excessive zooming out
+            _priceChart.ChartAreas[0].AxisY.Minimum = yMin; 
+            _priceChart.ChartAreas[0].AxisY.Maximum = yMax;
 
             var supportSeries = CreateSeries("Support Price", Color.Green);
             var resistanceSeries = CreateSeries("Resistance Price", Color.Red);
@@ -341,6 +353,7 @@ namespace KasPriceChart
                 _xPanStartMax = xAxis.ScaleView.ViewMaximum;
                 _yPanStartMin = yAxis.ScaleView.ViewMinimum;
                 _yPanStartMax = yAxis.ScaleView.ViewMaximum;
+                chart.Cursor = Cursors.NoMove2D;
             }
         }
 
@@ -359,10 +372,6 @@ namespace KasPriceChart
                     double newXPosition = _xPanStartMin - deltaX;
                     double newYPosition = _yPanStartMin - deltaY;
 
-                    // Ensure the new position is within valid range
-                    newXPosition = Math.Max(xAxis.Minimum, Math.Min(newXPosition, xAxis.Maximum - xAxis.ScaleView.Size));
-                    newYPosition = Math.Max(yAxis.Minimum, Math.Min(newYPosition, yAxis.Maximum - yAxis.ScaleView.Size));
-
                     xAxis.ScaleView.Position = newXPosition;
                     yAxis.ScaleView.Position = newYPosition;
                 }
@@ -375,7 +384,21 @@ namespace KasPriceChart
             if (e.Button == MouseButtons.Left)
             {
                 _isPanning = false;
+                var chart = (Chart)sender;
+                chart.Cursor = Cursors.Hand;
             }
+        }
+
+        private void Chart_MouseEnter(object sender, EventArgs e)
+        {
+            var chart = (Chart)sender;
+            chart.Cursor = Cursors.Hand; // Set cursor to hand when entering the chart
+        }
+
+        private void Chart_MouseLeave(object sender, EventArgs e)
+        {
+            var chart = (Chart)sender;
+            chart.Cursor = Cursors.Default; // Reset cursor to default when leaving the chart
         }
         #endregion
 
