@@ -180,7 +180,7 @@ namespace KasPriceChart
 
             var seriesPrice = new Series("Price")
             {
-                ChartType = SeriesChartType.Line,
+                ChartType = SeriesChartType.StepLine,
                 Color = _priceLineColor,
                 MarkerStyle = MarkerStyle.Circle,
                 MarkerSize = 10,
@@ -245,10 +245,6 @@ namespace KasPriceChart
 
             for (int i = 0; i < dates.Count; i++)
             {
-                if (i < prices.Count)
-                {
-                    seriesPrice.Points.AddXY(dates[i], prices[i]);
-                }
                 supportSeries.Points.AddXY(dates[i], supportPrices[i]);
                 resistanceSeries.Points.AddXY(dates[i], resistancePrices[i]);
                 fairPriceSeries.Points.AddXY(dates[i], fairPrices[i]);
