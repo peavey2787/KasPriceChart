@@ -82,6 +82,7 @@ namespace KasPriceChart
                 btnStart.PerformClick();
             }
             ShowTheChart();
+            ShowTheHashrateChart();
             appInControl = false;
         }
         #endregion
@@ -298,7 +299,7 @@ namespace KasPriceChart
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            ShowTheChart();
+            
         }
 
         #endregion
