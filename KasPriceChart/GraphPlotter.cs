@@ -116,11 +116,7 @@ namespace KasPriceChart
             chart.ChartAreas[0].AxisX.IntervalAutoMode = IntervalAutoMode.VariableCount;
 
             // Format y-axis labels to show values with 4 decimal places
-            chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";
-            
-            // Set y-axis to logarithmic
-            chart.ChartAreas[0].AxisY.IsLogarithmic = true;
-            chart.ChartAreas[0].AxisY.LogarithmBase = 10;
+            chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";            
         }
 
         #endregion
@@ -128,6 +124,9 @@ namespace KasPriceChart
 
         public void UpdateGraph(List<DataPoint> dataPoints)
         {
+            // Ensure the y-axis is not set to logarithmic
+            _priceChart.ChartAreas[0].AxisY.IsLogarithmic = false;
+
             _priceChart.Series.Clear();
             _hashrateChart.Series.Clear();
 
@@ -169,6 +168,16 @@ namespace KasPriceChart
             _hashrateChart.ChartAreas[0].AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
             _hashrateChart.ChartAreas[0].AxisY.Interval = 0; // Reset interval to allow automatic adjustment
 
+            // Calculate yMin and yMax from the price data points
+            double yMin = dataPoints.Where(dp => dp.Price > 0).Min(dp => dp.Price);
+            double yMax = dataPoints.Max(dp => dp.Price);
+
+            // Ensure the yMin is not less than 0
+            yMin = Math.Max(yMin, 0.01);
+
+            // Set the y-axis range to prevent excessive zooming out
+            _priceChart.ChartAreas[0].AxisY.Minimum = yMin;
+            _priceChart.ChartAreas[0].AxisY.Maximum = yMax;
 
             // Reset zoom to fully zoomed out
             ResetZoom(_priceChart);
@@ -178,10 +187,16 @@ namespace KasPriceChart
             _hashrateChart.Invalidate();
         }
 
+
         public void UpdateGraphWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue)
         {
+            // Set y-axis to logarithmic
+            _priceChart.ChartAreas[0].AxisY.IsLogarithmic = true;
+            _priceChart.ChartAreas[0].AxisY.LogarithmBase = 10;
+
             _priceChart.Series.Clear();
             richTextBoxLog.Clear();
+
 
             var seriesPrice = new Series("Price")
             {
@@ -244,6 +259,8 @@ namespace KasPriceChart
             _priceChart.ChartAreas[0].AxisY.Minimum = yMin; 
             _priceChart.ChartAreas[0].AxisY.Maximum = yMax;
 
+            setYAxisRange(supportPrices, resistancePrices, fairPrices);
+
             var supportSeries = CreateSeries("Support Price", Color.Green);
             var resistanceSeries = CreateSeries("Resistance Price", Color.Red);
             var fairPriceSeries = CreateSeries("Fair Price", Color.Blue);
@@ -267,7 +284,15 @@ namespace KasPriceChart
             string report = GenerateReport(dataPoints, genesisDate, exponent, fairPriceConstant, rSquared, logDeltaGB, logPrices, sumX, sumY, sumXY, sumX2, sumY2);
             richTextBoxLog.Text = report;
         }
+        private void setYAxisRange(List<double> supportPrices, List<double> resistancePrices, List<double> fairPrices)
+        {
+            // Calculate yMin and yMax from the projected values
+            double yMin = Math.Min(supportPrices.Min(), Math.Min(resistancePrices.Min(), fairPrices.Min())); double yMax = Math.Max(supportPrices.Max(), Math.Max(resistancePrices.Max(), fairPrices.Max()));
 
+            // Set the y-axis range to prevent excessive zooming out
+            _priceChart.ChartAreas[0].AxisY.Minimum = yMin;
+            _priceChart.ChartAreas[0].AxisY.Maximum = yMax;
+        }
         private Series CreateSeries(string name, Color color)
         {
             return new Series(name)
@@ -343,7 +368,6 @@ namespace KasPriceChart
             }
         }
 
-
         private void Chart_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -376,10 +400,19 @@ namespace KasPriceChart
                     double newXPosition = _xPanStartMin - deltaX;
                     double newYPosition = _yPanStartMin - deltaY;
 
+                    // Ensure the new y-axis position is not less than 0
+                    if (newYPosition < 0)
+                    {
+                        newYPosition = 0;
+                    }
+
                     xAxis.ScaleView.Position = newXPosition;
                     yAxis.ScaleView.Position = newYPosition;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // Log or handle exception as needed
+                }
             }
         }
 
