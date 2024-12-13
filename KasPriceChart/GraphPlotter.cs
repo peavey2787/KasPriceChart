@@ -126,22 +126,21 @@ namespace KasPriceChart
 
             try
             {
-                double zoomFactor = 0.5; // Adjust this value to make zooming more gradual
-                double minZoomSize = 0.01; // Minimum zoom size to prevent zooming out when zooming in
+                double zoomFactor = 0.9; // This remains for zooming in
+                double minZoomSize = 0.001; // Minimum zoom size for zooming in further
+                double zoomOutFactor = 1.1; // Factor for incremental zooming out
 
-                double xMin = xAxis.ScaleView.ViewMinimum;
-                double xMax = xAxis.ScaleView.ViewMaximum;
-                double yMin = yAxis.ScaleView.ViewMinimum;
-                double yMax = yAxis.ScaleView.ViewMaximum;
-
-                double posXStart = xAxis.PixelPositionToValue(e.Location.X) - (xMax - xMin) * zoomFactor;
-                double posXFinish = xAxis.PixelPositionToValue(e.Location.X) + (xMax - xMin) * zoomFactor;
-                double posYStart = yAxis.PixelPositionToValue(e.Location.Y) - (yMax - yMin) * zoomFactor;
-                double posYFinish = yAxis.PixelPositionToValue(e.Location.Y) + (yMax - yMin) * zoomFactor;
+                // Get mouse position in axis values
+                double mouseXValue = xAxis.PixelPositionToValue(e.Location.X);
+                double mouseYValue = yAxis.PixelPositionToValue(e.Location.Y);
 
                 if (e.Delta > 0) // Zoom in
                 {
-                    // Ensure the zoom range is within the minimum zoom size
+                    double posXStart = mouseXValue - (mouseXValue - xAxis.ScaleView.ViewMinimum) * zoomFactor;
+                    double posXFinish = mouseXValue + (xAxis.ScaleView.ViewMaximum - mouseXValue) * zoomFactor;
+                    double posYStart = mouseYValue - (mouseYValue - yAxis.ScaleView.ViewMinimum) * zoomFactor;
+                    double posYFinish = mouseYValue + (yAxis.ScaleView.ViewMaximum - mouseYValue) * zoomFactor;
+
                     if ((posXFinish - posXStart) > minZoomSize && (posYFinish - posYStart) > minZoomSize)
                     {
                         xAxis.ScaleView.Zoom(posXStart, posXFinish);
@@ -150,8 +149,13 @@ namespace KasPriceChart
                 }
                 else if (e.Delta < 0) // Zoom out
                 {
-                    xAxis.ScaleView.ZoomReset();
-                    yAxis.ScaleView.ZoomReset();
+                    double posXStart = mouseXValue - (mouseXValue - xAxis.ScaleView.ViewMinimum) * zoomOutFactor;
+                    double posXFinish = mouseXValue + (xAxis.ScaleView.ViewMaximum - mouseXValue) * zoomOutFactor;
+                    double posYStart = mouseYValue - (mouseYValue - yAxis.ScaleView.ViewMinimum) * zoomOutFactor;
+                    double posYFinish = mouseYValue + (yAxis.ScaleView.ViewMaximum - mouseYValue) * zoomOutFactor;
+
+                    xAxis.ScaleView.Zoom(posXStart, posXFinish);
+                    yAxis.ScaleView.Zoom(posYStart, posYFinish);
                 }
             }
             catch (Exception ex)
@@ -159,6 +163,11 @@ namespace KasPriceChart
                 // Log or handle exception as needed
             }
         }
+
+
+
+
+
 
 
         private void Chart_MouseDown(object sender, MouseEventArgs e)
