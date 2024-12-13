@@ -58,6 +58,11 @@
             this.tabPageHashrate = new System.Windows.Forms.TabPage();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.cmbViewTimspan = new System.Windows.Forms.ComboBox();
+            this.lblView = new System.Windows.Forms.Label();
+            this.chkPowerLawLines = new System.Windows.Forms.CheckBox();
+            this.richTextBoxLog = new System.Windows.Forms.RichTextBox();
+            this.lblRValue = new System.Windows.Forms.Label();
+            this.btnShowMore = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -80,13 +85,13 @@
             series1.Legend = "Legend1";
             series1.Name = "Series1";
             this.chart1.Series.Add(series1);
-            this.chart1.Size = new System.Drawing.Size(861, 318);
+            this.chart1.Size = new System.Drawing.Size(861, 361);
             this.chart1.TabIndex = 0;
             this.chart1.Text = "Price";
             // 
             // txtInterval
             // 
-            this.txtInterval.Location = new System.Drawing.Point(395, 40);
+            this.txtInterval.Location = new System.Drawing.Point(369, 40);
             this.txtInterval.Name = "txtInterval";
             this.txtInterval.Size = new System.Drawing.Size(33, 20);
             this.txtInterval.TabIndex = 1;
@@ -109,7 +114,7 @@
             // 
             this.btnImport.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnImport.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.btnImport.Location = new System.Drawing.Point(707, 37);
+            this.btnImport.Location = new System.Drawing.Point(719, 37);
             this.btnImport.Name = "btnImport";
             this.btnImport.Size = new System.Drawing.Size(58, 23);
             this.btnImport.TabIndex = 4;
@@ -132,7 +137,7 @@
             // lblInterval
             // 
             this.lblInterval.AutoSize = true;
-            this.lblInterval.Location = new System.Drawing.Point(276, 43);
+            this.lblInterval.Location = new System.Drawing.Point(250, 43);
             this.lblInterval.Name = "lblInterval";
             this.lblInterval.Size = new System.Drawing.Size(113, 13);
             this.lblInterval.TabIndex = 6;
@@ -141,7 +146,7 @@
             // lblDataLoaded
             // 
             this.lblDataLoaded.AutoSize = true;
-            this.lblDataLoaded.Location = new System.Drawing.Point(124, 78);
+            this.lblDataLoaded.Location = new System.Drawing.Point(113, 77);
             this.lblDataLoaded.Name = "lblDataLoaded";
             this.lblDataLoaded.Size = new System.Drawing.Size(250, 13);
             this.lblDataLoaded.TabIndex = 7;
@@ -150,7 +155,7 @@
             // lblCountDown
             // 
             this.lblCountDown.AutoSize = true;
-            this.lblCountDown.Location = new System.Drawing.Point(205, 43);
+            this.lblCountDown.Location = new System.Drawing.Point(189, 43);
             this.lblCountDown.Name = "lblCountDown";
             this.lblCountDown.Size = new System.Drawing.Size(28, 13);
             this.lblCountDown.TabIndex = 8;
@@ -167,6 +172,8 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.chkPowerLawLines);
+            this.groupBox1.Controls.Add(this.lblView);
             this.groupBox1.Controls.Add(this.cmbViewTimspan);
             this.groupBox1.Controls.Add(this.chkAutoStart);
             this.groupBox1.Controls.Add(this.groupBox2);
@@ -180,7 +187,7 @@
             this.groupBox1.Controls.Add(this.txtInterval);
             this.groupBox1.Controls.Add(this.btnStart);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.groupBox1.Location = new System.Drawing.Point(0, 350);
+            this.groupBox1.Location = new System.Drawing.Point(0, 393);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(875, 100);
             this.groupBox1.TabIndex = 10;
@@ -244,7 +251,7 @@
             // chkUseOnlyUploadedData
             // 
             this.chkUseOnlyUploadedData.AutoSize = true;
-            this.chkUseOnlyUploadedData.Location = new System.Drawing.Point(663, 66);
+            this.chkUseOnlyUploadedData.Location = new System.Drawing.Point(719, 73);
             this.chkUseOnlyUploadedData.Name = "chkUseOnlyUploadedData";
             this.chkUseOnlyUploadedData.Size = new System.Drawing.Size(144, 17);
             this.chkUseOnlyUploadedData.TabIndex = 10;
@@ -277,16 +284,19 @@
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(875, 350);
+            this.tabControl1.Size = new System.Drawing.Size(875, 393);
             this.tabControl1.TabIndex = 12;
             // 
             // tabPagePrice
             // 
+            this.tabPagePrice.Controls.Add(this.btnShowMore);
+            this.tabPagePrice.Controls.Add(this.lblRValue);
+            this.tabPagePrice.Controls.Add(this.richTextBoxLog);
             this.tabPagePrice.Controls.Add(this.chart1);
             this.tabPagePrice.Location = new System.Drawing.Point(4, 22);
             this.tabPagePrice.Name = "tabPagePrice";
             this.tabPagePrice.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPagePrice.Size = new System.Drawing.Size(867, 324);
+            this.tabPagePrice.Size = new System.Drawing.Size(867, 367);
             this.tabPagePrice.TabIndex = 0;
             this.tabPagePrice.Text = "Price";
             this.tabPagePrice.UseVisualStyleBackColor = true;
@@ -318,20 +328,80 @@
             "2 Weeks",
             "1 Month",
             "1 Year"});
-            this.cmbViewTimspan.Location = new System.Drawing.Point(489, 43);
+            this.cmbViewTimspan.Location = new System.Drawing.Point(570, 43);
             this.cmbViewTimspan.Name = "cmbViewTimspan";
-            this.cmbViewTimspan.Size = new System.Drawing.Size(121, 21);
+            this.cmbViewTimspan.Size = new System.Drawing.Size(113, 21);
             this.cmbViewTimspan.TabIndex = 14;
             this.cmbViewTimspan.Text = "All Data";
             this.cmbViewTimspan.SelectedIndexChanged += new System.EventHandler(this.cmbViewTimspan_SelectedIndexChanged);
             this.cmbViewTimspan.TextUpdate += new System.EventHandler(this.cmbViewTimspan_TextUpdate);
+            // 
+            // lblView
+            // 
+            this.lblView.AutoSize = true;
+            this.lblView.Location = new System.Drawing.Point(531, 46);
+            this.lblView.Name = "lblView";
+            this.lblView.Size = new System.Drawing.Size(33, 13);
+            this.lblView.TabIndex = 15;
+            this.lblView.Text = "View:";
+            // 
+            // chkPowerLawLines
+            // 
+            this.chkPowerLawLines.AutoSize = true;
+            this.chkPowerLawLines.Location = new System.Drawing.Point(570, 73);
+            this.chkPowerLawLines.Name = "chkPowerLawLines";
+            this.chkPowerLawLines.Size = new System.Drawing.Size(113, 17);
+            this.chkPowerLawLines.TabIndex = 16;
+            this.chkPowerLawLines.Text = "Power Law Lines?";
+            this.chkPowerLawLines.UseVisualStyleBackColor = true;
+            this.chkPowerLawLines.CheckedChanged += new System.EventHandler(this.chkPowerLawLines_CheckedChanged);
+            // 
+            // richTextBoxLog
+            // 
+            this.richTextBoxLog.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.richTextBoxLog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
+            this.richTextBoxLog.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(112)))), ((int)(((byte)(199)))), ((int)(((byte)(186)))));
+            this.richTextBoxLog.Location = new System.Drawing.Point(332, 56);
+            this.richTextBoxLog.Name = "richTextBoxLog";
+            this.richTextBoxLog.ReadOnly = true;
+            this.richTextBoxLog.Size = new System.Drawing.Size(527, 259);
+            this.richTextBoxLog.TabIndex = 1;
+            this.richTextBoxLog.Text = "";
+            this.richTextBoxLog.Visible = false;
+            // 
+            // lblRValue
+            // 
+            this.lblRValue.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblRValue.AutoSize = true;
+            this.lblRValue.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
+            this.lblRValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblRValue.Location = new System.Drawing.Point(537, 5);
+            this.lblRValue.Name = "lblRValue";
+            this.lblRValue.Size = new System.Drawing.Size(31, 16);
+            this.lblRValue.TabIndex = 2;
+            this.lblRValue.Text = "R² =";
+            this.lblRValue.Visible = false;
+            // 
+            // btnShowMore
+            // 
+            this.btnShowMore.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnShowMore.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnShowMore.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.btnShowMore.Location = new System.Drawing.Point(785, 15);
+            this.btnShowMore.Name = "btnShowMore";
+            this.btnShowMore.Size = new System.Drawing.Size(74, 24);
+            this.btnShowMore.TabIndex = 3;
+            this.btnShowMore.Text = "Show More";
+            this.btnShowMore.UseVisualStyleBackColor = true;
+            this.btnShowMore.Visible = false;
+            this.btnShowMore.Click += new System.EventHandler(this.btnShowMore_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
-            this.ClientSize = new System.Drawing.Size(875, 450);
+            this.ClientSize = new System.Drawing.Size(875, 493);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.groupBox1);
             this.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(112)))), ((int)(((byte)(199)))), ((int)(((byte)(186)))));
@@ -347,6 +417,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.chart2)).EndInit();
             this.tabControl1.ResumeLayout(false);
             this.tabPagePrice.ResumeLayout(false);
+            this.tabPagePrice.PerformLayout();
             this.tabPageHashrate.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -376,6 +447,11 @@
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.CheckBox chkAutoStart;
         private System.Windows.Forms.ComboBox cmbViewTimspan;
+        private System.Windows.Forms.Label lblView;
+        private System.Windows.Forms.CheckBox chkPowerLawLines;
+        private System.Windows.Forms.RichTextBox richTextBoxLog;
+        private System.Windows.Forms.Label lblRValue;
+        private System.Windows.Forms.Button btnShowMore;
     }
 }
 

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace KasPriceChart
@@ -18,6 +19,7 @@ namespace KasPriceChart
         private Timer _timer;
         private DateTime _lastFetchTime = DateTime.MinValue;
         private int _countdownTime;
+        private bool appInControl = false;
         #endregion
 
 
@@ -32,7 +34,7 @@ namespace KasPriceChart
         {
             _dataFetcher = new DataFetcher();
             _dataManager = new DataManager();
-            _graphPlotter = new GraphPlotter(chart1, chart2, lblCurrentPrice, lblCurrentHashrate, lblLastTimeStamp);
+            _graphPlotter = new GraphPlotter(chart1, chart2);
 
             _timer = new Timer();
             _timer.Interval = 1000;
@@ -51,6 +53,7 @@ namespace KasPriceChart
         #region Start/Stop
         private void MainForm_Load(object sender, EventArgs e)
         {
+            appInControl = true;
             LoadControlStates();
 
             string masterFilePath = Path.Combine(Directory.GetCurrentDirectory(), "master.csv");
@@ -77,8 +80,9 @@ namespace KasPriceChart
             {
                 btnStart.PerformClick();
             }
-
-            ShowTheChart();
+            ShowTheChart(); // Show hashrate
+            ShowTheChart(chkPowerLawLines.Checked);
+            appInControl = false;
         }
         #endregion
 
@@ -172,7 +176,7 @@ namespace KasPriceChart
                 // Select All Data 
                 cmbViewTimspan.SelectedIndex = 0;
 
-                ShowTheChart();
+                ShowTheChart(chkPowerLawLines.Checked);
             }
         }
 
@@ -192,42 +196,95 @@ namespace KasPriceChart
                 MessageBox.Show("Data exported successfully.", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
+
+        private void btnShowMore_Click(object sender, EventArgs e)
+        {
+            if (btnShowMore.Text == "Show More")
+            {
+                richTextBoxLog.Visible = true;
+                btnShowMore.Text = "Show Less";
+            }
+            else if (btnShowMore.Text == "Show Less")
+            {
+                richTextBoxLog.Visible = false;
+                btnShowMore.Text = "Show More";
+            }
+        }
         #endregion        
+
 
         #region Checkboxes
         private void chkUseOnlyUploadedData_CheckedChanged(object sender, EventArgs e)
         {
-            SaveControlStates();
-        }
-
-        private void chkCoinCodex_CheckedChanged(object sender, EventArgs e)
-        {
-            SaveControlStates();
+            if (!appInControl)
+            {
+                SaveControlStates();
+            }            
         }
 
         private void chkAutoStart_CheckedChanged(object sender, EventArgs e)
         {
-            SaveControlStates();
-        }        
+            if (!appInControl)
+            {
+                SaveControlStates();
+            }
+        }
+
+        private void chkPowerLawLines_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!appInControl)
+            {
+                SaveControlStates();
+                ShowTheChart(chkPowerLawLines.Checked);
+                btnShowMore.Visible = chkPowerLawLines.Checked;
+                lblRValue.Visible = chkPowerLawLines.Checked;
+            } 
+            else
+            {
+                btnShowMore.Visible = chkPowerLawLines.Checked;
+                lblRValue.Visible = chkPowerLawLines.Checked;
+            }
+        }
         #endregion
+
 
         private void txtInterval_TextChanged(object sender, EventArgs e)
         {
-            if (int.TryParse(txtInterval.Text, out int interval))
+            if (!appInControl)
             {
-                _countdownTime = interval * 60; // Update countdown time in seconds
-                if (_timer.Enabled)
+                if (int.TryParse(txtInterval.Text, out int interval))
                 {
-                    _timer.Stop();
-                    _timer.Start();
+                    _countdownTime = interval * 60; // Update countdown time in seconds
+                    if (_timer.Enabled)
+                    {
+                        _timer.Stop();
+                        _timer.Start();
+                    }
+                    SaveControlStates();
                 }
-                SaveControlStates();
-            }
-            else
-            {
-                MessageBox.Show("Please enter a valid interval in minutes.", "Invalid Interval", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                else
+                {
+                    MessageBox.Show("Please enter a valid interval in minutes.", "Invalid Interval", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
         }
+
+        private async void cmbViewTimspan_TextUpdate(object sender, EventArgs e)
+        {
+            if (!appInControl)
+            {
+                await FetchData();
+            }
+        }
+
+        private async void cmbViewTimspan_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!appInControl)
+            {
+                await FetchData();
+            }
+        }
+        
         #endregion
 
 
@@ -260,7 +317,7 @@ namespace KasPriceChart
                 _countdownTime = (int)Math.Ceiling(remainingSeconds);
             }
 
-            ShowTheChart();
+            ShowTheChart(chkPowerLawLines.Checked);
 
             return success;
         }
@@ -277,6 +334,7 @@ namespace KasPriceChart
             AppSettings.Save("UpdateInterval", txtInterval.Text);
             AppSettings.Save("UseOnlyUploadedData", chkUseOnlyUploadedData.Checked);
             AppSettings.Save("AutoStart", chkAutoStart.Checked);
+            AppSettings.Save("UsePowerLaw", chkPowerLawLines.Checked);
         }
 
         private void LoadControlStates()
@@ -290,8 +348,11 @@ namespace KasPriceChart
             var useOnlyUploadedData = AppSettings.Load<bool>("UseOnlyUploadedData");
             chkUseOnlyUploadedData.Checked = useOnlyUploadedData;
 
-            var someOtherCheckbox = AppSettings.Load<bool>("AutoStart");
-            chkAutoStart.Checked = someOtherCheckbox;
+            var autoStart = AppSettings.Load<bool>("AutoStart");
+            chkAutoStart.Checked = autoStart;
+
+            var UsePowerLaw = AppSettings.Load<bool>("UsePowerLaw");
+            chkPowerLawLines.Checked = UsePowerLaw;
         }
 
         private void LoadLastFetchTime()
@@ -303,22 +364,52 @@ namespace KasPriceChart
             }
         }
 
-        private void ShowTheChart()
+        private void ShowTheChart(bool showPowerLawLines = false)
         {
+            // Filter data points for selected view
             string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
             List<DataPoint> dataPoints = DataManager.FilterDataPoints(_dataManager.GetData(), selectedTimespan);
-            _graphPlotter.UpdateGraph(dataPoints);
+
+            // Get latest data and update labels
+            var latestData = DataManager.GetLatestData(dataPoints);
+            UpdateCurrentLabels(latestData.latestPrice, latestData.latestHashrate, latestData.latestTimestamp);
+
+            // Update the chart
+            if (showPowerLawLines)
+            {
+
+                _graphPlotter.UpdateGraphWithPowerLaw(dataPoints, richTextBoxLog, lblRValue);
+            } 
+            else
+            {
+                _graphPlotter.UpdateGraph(dataPoints);
+            }
         }
+
+        private void UpdateCurrentLabels(double latestPrice, double latestHashrate, DateTime latestTimestamp)
+        {
+            if (latestPrice > 0)
+            {
+                lblCurrentPrice.Text = $"Price: ${latestPrice:F4}"; 
+            } 
+            else 
+            {
+                lblCurrentPrice.Text = "Error Fetching Price"; 
+            } 
+            if (latestHashrate > 0) 
+            { 
+                lblCurrentHashrate.Text = $"Hashrate: {GraphPlotter.FormatHashrateGetNumber(latestHashrate)} {GraphPlotter.FormatHashrateGetLabel(latestHashrate)}"; 
+            } 
+            else
+            { 
+                lblCurrentHashrate.Text = "Error Fetching Hashrate";
+            }
+            
+            lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:dd-MM-yyyy hh:mm:ss tt}";
+        }
+
         #endregion
 
-        private async void cmbViewTimspan_TextUpdate(object sender, EventArgs e)
-        {
-            await FetchData();
-        }
 
-        private async void cmbViewTimspan_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            await FetchData();
-        }
     }
 }
