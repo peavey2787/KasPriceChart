@@ -42,7 +42,7 @@ namespace KasPriceChart
 
             toolTip1.SetToolTip(chkUseOnlyUploadedData, "When checked the chart will only use the imported data set, but BE WARNED: Keep this ckecked if you don't want it to overwrite your main data set (master.csv)");            
             toolTip1.SetToolTip(btnImport, "Import custom data sets to merge with your current data set (master.csv) and continue adding real-time data or optionally just use the imported data");
-            toolTip1.SetToolTip(btnExport, "Export your current data set (master.csv) to be used later");
+            toolTip1.SetToolTip(btnExport, "Export your current data set (master.csv) to be used later (The data points exported depend on the drop down value selected)");
             toolTip1.SetToolTip(lblInterval, "The time it takes between attempts to get new real-time data");
         }
         #endregion
@@ -168,6 +168,9 @@ namespace KasPriceChart
                     _dataManager.MergeData(uploadedData);
                     SaveData();
                 }
+                
+                // Select All Data 
+                cmbViewTimspan.SelectedIndex = 0;
 
                 ShowTheChart();
             }
@@ -183,8 +186,9 @@ namespace KasPriceChart
 
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
-                var data = _dataManager.GetData();
-                CSVHandler.ExportData(data, saveFileDialog.FileName);
+                string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
+                List<DataPoint> dataPoints = DataManager.FilterDataPoints(_dataManager.GetData(), selectedTimespan);
+                CSVHandler.ExportData(dataPoints, saveFileDialog.FileName);
                 MessageBox.Show("Data exported successfully.", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
@@ -302,8 +306,8 @@ namespace KasPriceChart
         private void ShowTheChart()
         {
             string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
-
-            _graphPlotter.UpdateGraph(_dataManager.GetData(), selectedTimespan);
+            List<DataPoint> dataPoints = DataManager.FilterDataPoints(_dataManager.GetData(), selectedTimespan);
+            _graphPlotter.UpdateGraph(dataPoints);
         }
         #endregion
 

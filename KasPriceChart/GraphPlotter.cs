@@ -9,6 +9,7 @@ namespace KasPriceChart
 {
     public class GraphPlotter
     {
+        #region Variables
         private Chart _priceChart;
         private Chart _hashrateChart;
         private Label _lblCurrentPrice;
@@ -27,7 +28,10 @@ namespace KasPriceChart
         private double _xPanStartMax;
         private double _yPanStartMin;
         private double _yPanStartMax;
+        #endregion
 
+
+        #region Initialization
         public GraphPlotter(Chart priceChart, Chart hashrateChart, Label lblCurrentPrice, Label lblCurrentHashrate, Label lblLastTimeStamp)
         {
             _priceChart = priceChart;
@@ -115,6 +119,88 @@ namespace KasPriceChart
             // Format y-axis labels to show values with 4 decimal places
             chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";
         }
+        #endregion
+
+
+        public void UpdateGraph(List<DataPoint> dataPoints)
+        {
+            _priceChart.Series.Clear();
+            _hashrateChart.Series.Clear();
+
+            var seriesPrice = new Series("Price")
+            {
+                ChartType = SeriesChartType.Line,
+                Color = _priceLineColor, // Use stored color
+                MarkerStyle = MarkerStyle.Circle, // Show data points as dots
+                MarkerSize = 10, // Adjust the size of the dots
+                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
+            };
+
+            var seriesHashrate = new Series("Hashrate")
+            {
+                ChartType = SeriesChartType.Line,
+                Color = _hashrateLineColor, // Use stored color
+                MarkerStyle = MarkerStyle.Circle, // Show data points as dots
+                MarkerSize = 10, // Adjust the size of the dots
+                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
+            };
+
+            double latestPrice = 0;
+            double latestHashrate = 0;
+            DateTime latestTimestamp = DateTime.Now;
+
+            foreach (var point in dataPoints)
+            {
+                if (point.Price > 0)
+                {
+                    seriesPrice.Points.AddXY(point.Timestamp, point.Price);
+                    latestPrice = point.Price;
+                }
+                if (point.Hashrate > 0)
+                {
+                    seriesHashrate.Points.AddXY(point.Timestamp, point.Hashrate);
+                    latestHashrate = point.Hashrate;
+                }
+                if (point.Timestamp != null)
+                {
+                    latestTimestamp = point.Timestamp;
+                }
+            }
+
+            _priceChart.Series.Add(seriesPrice);
+            _hashrateChart.Series.Add(seriesHashrate);
+
+            // Adjust y-axis for hashrate chart to show full values
+            _hashrateChart.ChartAreas[0].AxisY.LabelStyle.Format = "N0"; // Show full values in normal format
+            _hashrateChart.ChartAreas[0].AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
+            _hashrateChart.ChartAreas[0].AxisY.Interval = 0; // Reset interval to allow automatic adjustment
+
+            _priceChart.Invalidate();
+            _hashrateChart.Invalidate();
+
+            // Update labels with the latest data point
+            if (dataPoints.Count > 0)
+            {
+                if (latestPrice > 0)
+                {
+                    _lblCurrentPrice.Text = $"Price: ${latestPrice:F4}";
+                }
+                else
+                {
+                    _lblCurrentPrice.Text = "Error Fetching Price";
+                }
+                if (latestHashrate > 0)
+                {
+                    _lblCurrentHashrate.Text = $"Hashrate: {FormatHashrateGetNumber(latestHashrate)} {FormatHashrateGetLabel(latestHashrate)}";
+                }
+                else
+                {
+                    _lblCurrentHashrate.Text = "Error Fetching Hashrate";
+                }
+
+                _lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:dd-MM-yyyy hh:mm:ss tt}";
+            }
+        }
 
 
         #region Mouse Events
@@ -163,12 +249,6 @@ namespace KasPriceChart
                 // Log or handle exception as needed
             }
         }
-
-
-
-
-
-
 
         private void Chart_MouseDown(object sender, MouseEventArgs e)
         {
@@ -222,206 +302,7 @@ namespace KasPriceChart
         #endregion
 
 
-        public void UpdateGraph(List<DataPoint> dataPoints, string selectedTimespan)
-        {
-            // Filter data points based on the selected timespan
-            List<DataPoint> filteredDataPoints = FilterDataPoints(dataPoints, selectedTimespan);
-
-            _priceChart.Series.Clear();
-            _hashrateChart.Series.Clear();
-
-            var seriesPrice = new Series("Price")
-            {
-                ChartType = SeriesChartType.Line,
-                Color = _priceLineColor, // Use stored color
-                MarkerStyle = MarkerStyle.Circle, // Show data points as dots
-                MarkerSize = 10, // Adjust the size of the dots
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
-            };
-
-            var seriesHashrate = new Series("Hashrate")
-            {
-                ChartType = SeriesChartType.Line,
-                Color = _hashrateLineColor, // Use stored color
-                MarkerStyle = MarkerStyle.Circle, // Show data points as dots
-                MarkerSize = 10, // Adjust the size of the dots
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
-            };
-
-            double latestPrice = 0;
-            double latestHashrate = 0;
-            DateTime latestTimestamp = DateTime.Now;
-
-            foreach (var point in filteredDataPoints)
-            {
-                if (point.Price > 0)
-                {
-                    seriesPrice.Points.AddXY(point.Timestamp, point.Price);
-                    latestPrice = point.Price;
-                }
-                if (point.Hashrate > 0)
-                {
-                    seriesHashrate.Points.AddXY(point.Timestamp, point.Hashrate);
-                    latestHashrate = point.Hashrate;
-                }
-                if (point.Timestamp != null)
-                {
-                    latestTimestamp = point.Timestamp;
-                }
-            }
-
-            _priceChart.Series.Add(seriesPrice);
-            _hashrateChart.Series.Add(seriesHashrate);
-
-            // Adjust y-axis for hashrate chart to show full values
-            _hashrateChart.ChartAreas[0].AxisY.LabelStyle.Format = "N0"; // Show full values in normal format
-            _hashrateChart.ChartAreas[0].AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
-            _hashrateChart.ChartAreas[0].AxisY.Interval = 0; // Reset interval to allow automatic adjustment
-
-            _priceChart.Invalidate();
-            _hashrateChart.Invalidate();
-
-            // Update labels with the latest data point
-            if (filteredDataPoints.Count > 0)
-            {
-                if (latestPrice > 0)
-                {
-                    _lblCurrentPrice.Text = $"Price: ${latestPrice:F4}";
-                }
-                else
-                {
-                    _lblCurrentPrice.Text = "Error Fetching Price";
-                }
-                if (latestHashrate > 0)
-                {
-                    _lblCurrentHashrate.Text = $"Hashrate: {FormatHashrateGetNumber(latestHashrate)} {FormatHashrateGetLabel(latestHashrate)}";
-                }
-                else
-                {
-                    _lblCurrentHashrate.Text = "Error Fetching Hashrate";
-                }
-
-                _lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:dd-MM-yyyy hh:mm:ss tt}";
-            }
-        }
-        private List<DataPoint> FilterDataPoints(List<DataPoint> dataPoints, string timespan)
-        {
-            // Validate and parse the timespan string
-            var match = System.Text.RegularExpressions.Regex.Match(timespan, @"^(\d+)\s*(minute|minutes|mins|hour|hours|hr|hrs|day|days|week|weeks|month|months|year|years)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (!match.Success)
-            {
-                // Return all data points if the timespan format is invalid
-                return dataPoints;
-            }
-
-            // Extract number and unit from the validated timespan
-            int number = int.Parse(match.Groups[1].Value);
-            string unit = match.Groups[2].Value.ToLower();
-
-            // Convert unit to full name with proper capitalization
-            string fullUnit;
-            switch (unit)
-            {
-                case "minute":
-                case "minutes":
-                case "mins":
-                    fullUnit = "Minutes";
-                    break;
-                case "hour":
-                case "hours":
-                case "hr":
-                case "hrs":
-                    fullUnit = "Hours";
-                    break;
-                case "day":
-                case "days":
-                    fullUnit = "Days";
-                    break;
-                case "week":
-                case "weeks":
-                    fullUnit = "Weeks";
-                    break;
-                case "month":
-                case "months":
-                    fullUnit = "Months";
-                    break;
-                case "year":
-                case "years":
-                    fullUnit = "Years";
-                    break;
-                default:
-                    throw new ArgumentException("Invalid time unit");
-            }
-
-            // Calculate the interval based on the parsed number and unit
-            TimeSpan interval;
-            switch (fullUnit)
-            {
-                case "Minutes":
-                    interval = TimeSpan.FromMinutes(number);
-                    break;
-                case "Hours":
-                    interval = TimeSpan.FromHours(number);
-                    break;
-                case "Days":
-                    interval = TimeSpan.FromDays(number);
-                    break;
-                case "Weeks":
-                    interval = TimeSpan.FromDays(number * 7);
-                    break;
-                case "Months":
-                    interval = TimeSpan.FromDays(number * 30);
-                    break;
-                case "Years":
-                    interval = TimeSpan.FromDays(number * 365);
-                    break;
-                default:
-                    throw new ArgumentException("Invalid time unit");
-            }
-
-            // Define the allowable variance
-            TimeSpan variance = TimeSpan.FromMinutes(2);
-
-            // Filter data points based on the interval
-            List<DataPoint> filteredDataPoints = new List<DataPoint>();
-
-            if (dataPoints.Count > 0)
-            {
-                for (int i = 0; i < dataPoints.Count; i++)
-                {
-                    bool foundMatch = false;
-
-                    DateTime previousTimestamp = dataPoints[i].Timestamp;
-
-                    for (int j = i + 1; j < dataPoints.Count; j++)
-                    {
-                        TimeSpan difference = dataPoints[j].Timestamp - previousTimestamp;
-
-                        // Check if the difference matches the interval +/- variance
-                        if (difference >= interval - variance && difference <= interval + variance)
-                        {
-                            filteredDataPoints.Add(dataPoints[j]);
-                            previousTimestamp = dataPoints[j].Timestamp;
-                            i = j - 1; // Move the outer loop to the current position
-                            foundMatch = true;
-                            break;
-                        }
-                    }
-
-                    // If no match found within the interval, move to the next point
-                    if (!foundMatch && i < dataPoints.Count - 1)
-                    {
-                        previousTimestamp = dataPoints[i + 1].Timestamp;
-                    }
-                }
-            }
-
-            return filteredDataPoints;
-        }
-
-
-
-
+        #region Helpers
         public void ShowLegends()
         {
             if (!_priceChart.Legends.Any())
@@ -470,7 +351,7 @@ namespace KasPriceChart
 
             return $"{hashrate:F3}";
         }
-
+        #endregion
 
     }
 }
