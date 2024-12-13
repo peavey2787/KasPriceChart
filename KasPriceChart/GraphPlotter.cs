@@ -81,14 +81,7 @@ namespace KasPriceChart
             chart.ChartAreas[0].CursorY.IsUserEnabled = false;
 
             // Set up an example series with the line color
-            var exampleSeries = new Series
-            {
-                ChartType = SeriesChartType.Line,
-                Color = lineColor,
-                MarkerStyle = MarkerStyle.Circle, // Show data points as dots
-                MarkerSize = 5, // Adjust the size of the dots
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
-            };
+            var exampleSeries = CreateSeries("Example", lineColor);
 
             chart.Series.Add(exampleSeries); // This can be an initial setup, actual data will overwrite
 
@@ -118,122 +111,128 @@ namespace KasPriceChart
             // Format y-axis labels to show values with 4 decimal places
             chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";            
         }
-
         #endregion
 
 
-        public void UpdateGraph(List<DataPoint> dataPoints)
+        #region Core Logic
+        private void UpdateChartCore(Chart chart, List<DataPoint> dataPoints, bool logOrLinear, string seriesName, Color seriesColor)
         {
-            // Ensure the y-axis is not set to logarithmic
-            _priceChart.ChartAreas[0].AxisY.IsLogarithmic = false;
+            chart.Series.Clear();
 
-            _priceChart.Series.Clear();
-            _hashrateChart.Series.Clear();
-
-            var seriesPrice = new Series("Price")
-            {
-                ChartType = SeriesChartType.Line,
-                Color = _priceLineColor, // Use stored color
-                MarkerStyle = MarkerStyle.Circle, // Show data points as dots
-                MarkerSize = 10, // Adjust the size of the dots
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
-            };
-
-            var seriesHashrate = new Series("Hashrate")
-            {
-                ChartType = SeriesChartType.Line,
-                Color = _hashrateLineColor, // Use stored color
-                MarkerStyle = MarkerStyle.Circle, // Show data points as dots
-                MarkerSize = 10, // Adjust the size of the dots
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}" // Display tooltips with full datetime info in 12-hour format
-            };
+            var series = CreateSeries(seriesName, seriesColor);
 
             foreach (var point in dataPoints)
             {
-                if (point.Price > 0)
+                if (point.Price > 0 && seriesName == "Price")
                 {
-                    seriesPrice.Points.AddXY(point.Timestamp, point.Price);
+                    series.Points.AddXY(point.Timestamp, point.Price);
                 }
-                if (point.Hashrate > 0)
+                else if (point.Hashrate > 0 && seriesName == "Hashrate")
                 {
-                    seriesHashrate.Points.AddXY(point.Timestamp, point.Hashrate);
+                    series.Points.AddXY(point.Timestamp, point.Hashrate);
                 }
             }
 
-            _priceChart.Series.Add(seriesPrice);
-            _hashrateChart.Series.Add(seriesHashrate);
+            chart.Series.Add(series);
 
-            // Adjust y-axis for hashrate chart to show full values
-            _hashrateChart.ChartAreas[0].AxisY.LabelStyle.Format = "N0"; // Show full values in normal format
-            _hashrateChart.ChartAreas[0].AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
-            _hashrateChart.ChartAreas[0].AxisY.Interval = 0; // Reset interval to allow automatic adjustment
+            // Adjust y-axis for hashrate chart to show full values if it is the hashrate chart
+            if (seriesName == "Hashrate")
+            {
+                chart.ChartAreas[0].AxisY.LabelStyle.Format = "N0"; // Show full values in normal format
+                chart.ChartAreas[0].AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
+                chart.ChartAreas[0].AxisY.Interval = 0; // Reset interval to allow automatic adjustment
+            }
 
-            // Calculate yMin and yMax from the price data points
-            double yMin = dataPoints.Where(dp => dp.Price > 0).Min(dp => dp.Price);
-            double yMax = dataPoints.Max(dp => dp.Price);
+            // Calculate yMin and yMax from the price data points if it is the price chart
+            if (seriesName == "Price")
+            {
+                double yMin = dataPoints.Where(dp => dp.Price > 0).Min(dp => dp.Price);
+                double yMax = dataPoints.Max(dp => dp.Price);
 
-            // Ensure the yMin is not less than 0
-            yMin = Math.Max(yMin, 0.01);
+                // Ensure the yMin is not less than 0
+                yMin = Math.Max(yMin, 0.01);
 
-            // Set the y-axis range to prevent excessive zooming out
-            _priceChart.ChartAreas[0].AxisY.Minimum = yMin;
-            _priceChart.ChartAreas[0].AxisY.Maximum = yMax;
+                // Set the y-axis range to prevent excessive zooming out
+                chart.ChartAreas[0].AxisY.Minimum = yMin;
+                chart.ChartAreas[0].AxisY.Maximum = yMax;
+            }
+
+            if (logOrLinear)
+            {
+                // Set y-axis to logarithmic
+                chart.ChartAreas[0].AxisY.IsLogarithmic = true;
+                chart.ChartAreas[0].AxisY.LogarithmBase = 10;
+            }
+            else
+            {
+                // Ensure the y-axis is not set to logarithmic
+                chart.ChartAreas[0].AxisY.IsLogarithmic = false;
+            }
 
             // Reset zoom to fully zoomed out
-            ResetZoom(_priceChart);
-            ResetZoom(_hashrateChart);
+            ResetZoom(chart);
 
-            _priceChart.Invalidate();
-            _hashrateChart.Invalidate();
+            chart.Invalidate();
         }
 
-
-        public void UpdateGraphWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue)
+        private void UpdateChartWithPowerLawCore(Chart chart, List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear, Color lineColor)
         {
-            // Set y-axis to logarithmic
-            _priceChart.ChartAreas[0].AxisY.IsLogarithmic = true;
-            _priceChart.ChartAreas[0].AxisY.LogarithmBase = 10;
-
-            _priceChart.Series.Clear();
+            chart.Series.Clear();
             richTextBoxLog.Clear();
 
-
-            var seriesPrice = new Series("Price")
+            if (dataPoints == null || dataPoints.Count == 0)
             {
-                ChartType = SeriesChartType.StepLine,
-                Color = _priceLineColor,
-                MarkerStyle = MarkerStyle.Circle,
-                MarkerSize = 10,
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
-                IsXValueIndexed = false
-            };
+                return;
+            }
+
+            var seriesData = CreateSeries("Data", lineColor);
 
             foreach (var point in dataPoints)
             {
-                if (point.Price > 0)
+                if (chart.Titles[0].Text == "Hashrate")
                 {
-                    seriesPrice.Points.AddXY(point.Timestamp, point.Price);
+                    if (point.Hashrate > 0)
+                    {
+                        seriesData.Points.AddXY(point.Timestamp, point.Hashrate);
+                    }
                 }
+                else if (chart.Titles[0].Text == "Price")
+                {
+                    if (point.Price > 0)
+                    {
+                        seriesData.Points.AddXY(point.Timestamp, point.Price);
+                    }
+                }
+                    
             }
 
-            _priceChart.Series.Add(seriesPrice);
+            chart.Series.Add(seriesData);
 
             var genesisDate = new DateTime(2021, 11, 7);
 
             // Perform log-log regression once to get the constants
             var (exponent, fairPriceConstant, rSquared, sumX, sumY, sumXY, sumX2, sumY2) = DataManager.GetRegressionConstants(dataPoints, genesisDate, richTextBoxLog);
 
-            // Extract significant digits (mantissa) and the exponent part separately
-            string significantDigits = fairPriceConstant.ToString("0.000E+0").Split('E')[0];
-            string exponentPart = fairPriceConstant.ToString("E").Substring(fairPriceConstant.ToString("E").IndexOf('E'));
+            // Extract significant digits and exponent part
+            string significantDigits = "N/A";
+            string formattedFairPriceConstant = "N/A";
+            try
+            {
+                string fairPriceString = fairPriceConstant.ToString("0.000E+0");
+                int exponentIndex = fairPriceString.IndexOf('E');
+                if (exponentIndex > -1)
+                {
+                    significantDigits = fairPriceString.Substring(0, exponentIndex);
+                    string exponentPart = fairPriceString.Substring(exponentIndex);
+                    exponentPart = exponentPart.Replace("E-0", "E-").Replace("E+0", "E+");
+                    formattedFairPriceConstant = $"{significantDigits}...{exponentPart}";
+                }
+            }
+            catch (Exception ex)
+            {
+                richTextBoxLog.AppendText($"Error extracting significant digits and exponent: {ex.Message}\n");
+            }
 
-            // Remove leading zeroes from the exponent part
-            exponentPart = exponentPart.Replace("E-0", "E-").Replace("E+0", "E+");
-
-            // Combine the parts to show the significant digits followed by the exponent part
-            string formattedFairPriceConstant = $"{significantDigits}...{exponentPart}";
-
-            // Combine all the values into the label
             lblRValue.Text = string.Format(
                 "R² = {0:F4}{1}Exponent: {2:F4}{1}Fair Price Constant: {3}",
                 rSquared,
@@ -242,28 +241,32 @@ namespace KasPriceChart
                 formattedFairPriceConstant
             );
 
-            // Log the regression constants
             richTextBoxLog.AppendText($"Regression Constants:\nExponent: {exponent}\nFair Price Constant: {fairPriceConstant}\n\n");
 
-            // Calculate the end date for the projection
             DateTime latestDate = dataPoints.Max(dp => dp.Timestamp);
             DateTime endDate = latestDate.AddYears(2);
 
-            // Prepare the chart data
             var (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices) = DataManager.PrepareChartData(genesisDate, dataPoints, exponent, fairPriceConstant * Math.Pow(10, -0.25), fairPriceConstant * Math.Pow(10, 0.25), fairPriceConstant, endDate);
 
-            // Calculate yMin and yMax from the projected values
-            double yMin = Math.Min(supportPrices.Min(), Math.Min(resistancePrices.Min(), fairPrices.Min())); double yMax = Math.Max(supportPrices.Max(), Math.Max(resistancePrices.Max(), fairPrices.Max())); 
-            
-            // Set the y-axis range to prevent excessive zooming out
-            _priceChart.ChartAreas[0].AxisY.Minimum = yMin; 
-            _priceChart.ChartAreas[0].AxisY.Maximum = yMax;
+            double yMin = Math.Min(supportPrices.Min(), Math.Min(resistancePrices.Min(), fairPrices.Min()));
+            double yMax = Math.Max(supportPrices.Max(), Math.Max(resistancePrices.Max(), fairPrices.Max()));
 
-            setYAxisRange(supportPrices, resistancePrices, fairPrices);
+            chart.ChartAreas[0].AxisY.Minimum = yMin;
+            chart.ChartAreas[0].AxisY.Maximum = yMax;
 
-            var supportSeries = CreateSeries("Support Price", Color.Green);
-            var resistanceSeries = CreateSeries("Resistance Price", Color.Red);
-            var fairPriceSeries = CreateSeries("Fair Price", Color.Blue);
+            if (logOrLinear)
+            {
+                chart.ChartAreas[0].AxisY.IsLogarithmic = true;
+                chart.ChartAreas[0].AxisY.LogarithmBase = 10;
+            }
+            else
+            {
+                chart.ChartAreas[0].AxisY.IsLogarithmic = false;
+            }
+
+            var supportSeries = CreateSeries("Support", Color.Green, true);
+            var resistanceSeries = CreateSeries("Resistance", Color.Red, true);
+            var fairPriceSeries = CreateSeries("Fair", Color.Blue, true);
 
             for (int i = 0; i < dates.Count; i++)
             {
@@ -272,42 +275,36 @@ namespace KasPriceChart
                 fairPriceSeries.Points.AddXY(dates[i], fairPrices[i]);
             }
 
-            _priceChart.Series.Add(supportSeries);
-            _priceChart.Series.Add(resistanceSeries);
-            _priceChart.Series.Add(fairPriceSeries);
+            chart.Series.Add(supportSeries);
+            chart.Series.Add(resistanceSeries);
+            chart.Series.Add(fairPriceSeries);
 
-            // Reset zoom to fully zoomed out
-            ResetZoom(_priceChart);
-
-            _priceChart.Invalidate();
-
-            string report = GenerateReport(dataPoints, genesisDate, exponent, fairPriceConstant, rSquared, logDeltaGB, logPrices, sumX, sumY, sumXY, sumX2, sumY2);
-            richTextBoxLog.Text = report;
+            ResetZoom(chart);
+            chart.Invalidate();
         }
-        private void setYAxisRange(List<double> supportPrices, List<double> resistancePrices, List<double> fairPrices)
+        #endregion
+
+
+        #region Public Actions
+        public void UpdatePriceChart(List<DataPoint> dataPoints, bool logOrLinear)
         {
-            // Calculate yMin and yMax from the projected values
-            double yMin = Math.Min(supportPrices.Min(), Math.Min(resistancePrices.Min(), fairPrices.Min())); double yMax = Math.Max(supportPrices.Max(), Math.Max(resistancePrices.Max(), fairPrices.Max()));
-
-            // Set the y-axis range to prevent excessive zooming out
-            _priceChart.ChartAreas[0].AxisY.Minimum = yMin;
-            _priceChart.ChartAreas[0].AxisY.Maximum = yMax;
+            UpdateChartCore(_priceChart, dataPoints, logOrLinear, "Price", _priceLineColor);
         }
-        private Series CreateSeries(string name, Color color)
+
+        public void UpdateHashrateChart(List<DataPoint> dataPoints, bool logOrLinear)
         {
-            return new Series(name)
-            {
-                ChartType = SeriesChartType.Line,
-                Color = color,
-                BorderDashStyle = ChartDashStyle.Dash,
-                BorderWidth = 2,
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
-                IsXValueIndexed = false
-            };
+            UpdateChartCore(_hashrateChart, dataPoints, logOrLinear, "Hashrate", _hashrateLineColor);
         }
 
-
-
+        public void UpdateHashrateWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear)
+        {
+            UpdateChartWithPowerLawCore(_hashrateChart, dataPoints, richTextBoxLog, lblRValue, logOrLinear, _hashrateLineColor);
+        }
+        public void UpdatePriceWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear)
+        {
+            UpdateChartWithPowerLawCore(_priceChart, dataPoints, richTextBoxLog, lblRValue, logOrLinear, _priceLineColor);
+        }
+        #endregion
 
 
         #region Mouse Events
@@ -399,12 +396,6 @@ namespace KasPriceChart
                     double deltaY = yAxis.PixelPositionToValue(e.Location.Y) - yAxis.PixelPositionToValue(_panStartPoint.Y);
                     double newXPosition = _xPanStartMin - deltaX;
                     double newYPosition = _yPanStartMin - deltaY;
-
-                    // Ensure the new y-axis position is not less than 0
-                    if (newYPosition < 0)
-                    {
-                        newYPosition = 0;
-                    }
 
                     xAxis.ScaleView.Position = newXPosition;
                     yAxis.ScaleView.Position = newYPosition;
@@ -552,6 +543,31 @@ namespace KasPriceChart
             chartArea.RecalculateAxesScale();
         }
 
+        private Series CreateSeries(string name, Color color, bool powerLawLines = false)
+        {
+            if (!powerLawLines)
+            {
+                return new Series(name)
+                {
+                    ChartType = SeriesChartType.Line,
+                    Color = color,
+                    MarkerStyle = MarkerStyle.Circle,
+                    MarkerSize = 10,
+                    ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
+                    IsXValueIndexed = false
+                };
+            }
+
+            return new Series(name)
+            {
+                ChartType = SeriesChartType.Line,
+                Color = color,
+                BorderDashStyle = ChartDashStyle.Dash,
+                BorderWidth = 2,
+                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
+                IsXValueIndexed = false
+            };
+        }
         #endregion
 
     }

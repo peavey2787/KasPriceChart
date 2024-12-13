@@ -53,9 +53,6 @@ namespace KasPriceChart
         #region Start/Stop
         private void MainForm_Load(object sender, EventArgs e)
         {
-            appInControl = true;
-            LoadControlStates();
-
             string masterFilePath = Path.Combine(Directory.GetCurrentDirectory(), "master.csv");
             
             if (CSVHandler.MasterFileExists(masterFilePath))
@@ -75,13 +72,16 @@ namespace KasPriceChart
                 lblDataLoaded.Text = "No data loaded, starting new dataset from right now";
             }
 
+            // Reload last saved state for controls
+            appInControl = true;
+            LoadControlStates();
+
             // Auto start if enabled
             if (chkAutoStart.Checked)
             {
                 btnStart.PerformClick();
             }
-            ShowTheChart(); // Show hashrate
-            ShowTheChart(chkPowerLawLines.Checked);
+            ShowTheChart();
             appInControl = false;
         }
         #endregion
@@ -176,7 +176,7 @@ namespace KasPriceChart
                 // Select All Data 
                 cmbViewTimspan.SelectedIndex = 0;
 
-                ShowTheChart(chkPowerLawLines.Checked);
+                ShowTheChart();
             }
         }
 
@@ -235,14 +235,25 @@ namespace KasPriceChart
             if (!appInControl)
             {
                 SaveControlStates();
-                ShowTheChart(chkPowerLawLines.Checked);
+                chkLogLinear.Checked = chkPowerLawLines.Checked;                
                 btnShowMore.Visible = chkPowerLawLines.Checked;
                 lblRValue.Visible = chkPowerLawLines.Checked;
+                ShowTheChart();
             } 
             else
             {
+                chkLogLinear.Checked = true;
                 btnShowMore.Visible = chkPowerLawLines.Checked;
                 lblRValue.Visible = chkPowerLawLines.Checked;
+                ShowTheChart();
+            }
+        }
+        private void chkLogLinear_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!appInControl)
+            {
+                SaveControlStates();
+                ShowTheChart();
             }
         }
         #endregion
@@ -284,7 +295,12 @@ namespace KasPriceChart
                 await FetchData();
             }
         }
-        
+
+        private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ShowTheChart();
+        }
+
         #endregion
 
 
@@ -317,7 +333,7 @@ namespace KasPriceChart
                 _countdownTime = (int)Math.Ceiling(remainingSeconds);
             }
 
-            ShowTheChart(chkPowerLawLines.Checked);
+            ShowTheChart();
 
             return success;
         }
@@ -363,8 +379,18 @@ namespace KasPriceChart
                 DateTime.TryParse(lastFetchTimeString, null, System.Globalization.DateTimeStyles.RoundtripKind, out _lastFetchTime);
             }
         }
-
-        private void ShowTheChart(bool showPowerLawLines = false)
+        private void ShowTheChart()
+        {
+            if (tabControl1.SelectedIndex == 0)
+            {
+                ShowThePriceChart(chkPowerLawLines.Checked, chkLogLinear.Checked);
+            }
+            else if (tabControl1.SelectedIndex == 1)
+            {
+                ShowTheHashrateChart(false, false);
+            }
+        }
+        private void ShowThePriceChart(bool showPowerLawLines = false, bool logOrLinear = false)
         {
             // Filter data points for selected view
             string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
@@ -378,14 +404,33 @@ namespace KasPriceChart
             if (showPowerLawLines)
             {
 
-                _graphPlotter.UpdateGraphWithPowerLaw(dataPoints, richTextBoxLog, lblRValue);
+                _graphPlotter.UpdatePriceWithPowerLaw(dataPoints, richTextBoxLog, lblRValue, logOrLinear);
             } 
             else
             {
-                _graphPlotter.UpdateGraph(dataPoints);
+                _graphPlotter.UpdatePriceChart(dataPoints, logOrLinear);
             }
         }
+        private void ShowTheHashrateChart(bool showPowerLawLines = false, bool logOrLinear = false)
+        {
+            // Filter data points for selected view
+            string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
+            List<DataPoint> dataPoints = DataManager.FilterDataPoints(_dataManager.GetData(), selectedTimespan);
 
+            // Get latest data and update labels
+            var latestData = DataManager.GetLatestData(dataPoints);
+            UpdateCurrentLabels(latestData.latestPrice, latestData.latestHashrate, latestData.latestTimestamp);
+
+            // Update the chart
+            if (showPowerLawLines)
+            {
+                _graphPlotter.UpdateHashrateWithPowerLaw(dataPoints, richTextBoxLog, lblRValue, logOrLinear);
+            }
+            else
+            {
+                _graphPlotter.UpdateHashrateChart(dataPoints, logOrLinear);
+            }
+        }
         private void UpdateCurrentLabels(double latestPrice, double latestHashrate, DateTime latestTimestamp)
         {
             if (latestPrice > 0)
@@ -407,6 +452,8 @@ namespace KasPriceChart
             
             lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:dd-MM-yyyy hh:mm:ss tt}";
         }
+
+
 
         #endregion
 

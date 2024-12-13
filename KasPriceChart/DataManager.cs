@@ -221,10 +221,17 @@ namespace KasPriceChart
             return (latestPrice, latestHashrate, latestTimestamp);
         }
 
+
         public static (double exponent, double fairPriceConstant, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) GetRegressionConstants(List<DataPoint> dataPoints, DateTime genesisDate, RichTextBox richTextBoxLog)
         {
             var deltaGB = new List<double>();
             var prices = new List<double>();
+
+            if (dataPoints == null || dataPoints.Count == 0)
+            {
+                richTextBoxLog.AppendText("Error: Data points list is empty or null.\n");
+                return (double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN);
+            }
 
             var earliestDate = dataPoints.Min(dp => dp.Timestamp);
             if (genesisDate >= earliestDate)

@@ -63,6 +63,7 @@
             this.richTextBoxLog = new System.Windows.Forms.RichTextBox();
             this.lblRValue = new System.Windows.Forms.Label();
             this.btnShowMore = new System.Windows.Forms.Button();
+            this.chkLogLinear = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -172,6 +173,7 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.chkLogLinear);
             this.groupBox1.Controls.Add(this.chkPowerLawLines);
             this.groupBox1.Controls.Add(this.lblView);
             this.groupBox1.Controls.Add(this.cmbViewTimspan);
@@ -272,7 +274,7 @@
             series2.Legend = "Legend1";
             series2.Name = "Series1";
             this.chart2.Series.Add(series2);
-            this.chart2.Size = new System.Drawing.Size(861, 318);
+            this.chart2.Size = new System.Drawing.Size(861, 361);
             this.chart2.TabIndex = 11;
             this.chart2.Text = "Hashrate";
             // 
@@ -286,6 +288,7 @@
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(875, 393);
             this.tabControl1.TabIndex = 12;
+            this.tabControl1.SelectedIndexChanged += new System.EventHandler(this.tabControl1_SelectedIndexChanged);
             // 
             // tabPagePrice
             // 
@@ -307,7 +310,7 @@
             this.tabPageHashrate.Location = new System.Drawing.Point(4, 22);
             this.tabPageHashrate.Name = "tabPageHashrate";
             this.tabPageHashrate.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageHashrate.Size = new System.Drawing.Size(867, 324);
+            this.tabPageHashrate.Size = new System.Drawing.Size(867, 367);
             this.tabPageHashrate.TabIndex = 1;
             this.tabPageHashrate.Text = "Hashrate";
             this.tabPageHashrate.UseVisualStyleBackColor = true;
@@ -396,6 +399,17 @@
             this.btnShowMore.Visible = false;
             this.btnShowMore.Click += new System.EventHandler(this.btnShowMore_Click);
             // 
+            // chkLogLinear
+            // 
+            this.chkLogLinear.AutoSize = true;
+            this.chkLogLinear.Location = new System.Drawing.Point(445, 43);
+            this.chkLogLinear.Name = "chkLogLinear";
+            this.chkLogLinear.Size = new System.Drawing.Size(78, 17);
+            this.chkLogLinear.TabIndex = 17;
+            this.chkLogLinear.Text = "Log/Linear";
+            this.chkLogLinear.UseVisualStyleBackColor = true;
+            this.chkLogLinear.CheckedChanged += new System.EventHandler(this.chkLogLinear_CheckedChanged);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -452,6 +466,7 @@
         private System.Windows.Forms.RichTextBox richTextBoxLog;
         private System.Windows.Forms.Label lblRValue;
         private System.Windows.Forms.Button btnShowMore;
+        private System.Windows.Forms.CheckBox chkLogLinear;
     }
 }
 
