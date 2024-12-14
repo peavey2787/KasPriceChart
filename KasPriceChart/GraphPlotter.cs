@@ -7,12 +7,40 @@ using System.Linq;
 using System.Text;
 using System.Drawing.Drawing2D;
 using System.Threading;
+using Cursor = System.Windows.Forms.Cursor;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace KasPriceChart
 {
     public class GraphPlotter
     {
         #region Variables
+        private static readonly (double Range, double Interval)[] ZoomLevels = new[]
+        {
+            (0.0052, 0.0001625),      // 5 minutes, with labels every 11.25 seconds
+            (0.0104, 0.000325),       // 15 minutes, with labels every 22.5 seconds
+            (0.0156, 0.00065),        // 30 minutes, with labels every 45 seconds
+            (0.0208, 0.0013),         // 45 minutes, with labels every 1.875 minutes
+            (0.0417, 0.0026),         // 1 hour, with labels every 3.75 minutes
+            (0.0833, 0.0052),         // 2 hours, with labels every 7.5 minutes
+            (0.167, 0.0104),          // 4 hours, with labels every 15 minutes
+            (0.25, 0.0208),           // 6 hours, with labels every 25 minutes
+            (0.5, 0.03125),           // 12 hours, with labels every 45 minutes
+            (1, 0.1),                 // 1 day, with labels every 1.5 hours
+            (3, 0.5),                 // 3 days, with labels every 3 hours
+            (7, 1),                   // 1 week, with labels every day
+            (14, 1),                  // 2 weeks, with labels every day
+            (30.4, 7),                // 1 month, with labels every week
+            (91.25, 14),              // 3 months, with labels every 2 weeks
+            (182.5, 14),              // 6 months, with labels every month
+            (365, 30),                // 1 year, with labels every month
+            (365 * 2, 30),            // 2 years, with labels every month
+        };
+
+
+
+        private double _initialZoomLevel;
+
         private Chart _priceChart;
         private Chart _hashrateChart;
         private Color _priceBackgroundColor;
@@ -38,6 +66,7 @@ namespace KasPriceChart
         {
             // Defaults
             _dataPointSize = 5;
+            _initialZoomLevel = ZoomLevels[0].Interval;
 
             // Set charts
             _priceChart = priceChart;
@@ -114,7 +143,11 @@ namespace KasPriceChart
 
             // Format x-axis labels to show date and time on separate lines
             chart.ChartAreas[0].AxisX.LabelStyle.Format = "dd-MM-yyyy\nhh:mm:ss tt";
-            chart.ChartAreas[0].AxisX.IntervalAutoMode = IntervalAutoMode.VariableCount;
+
+            // Set initial x and y axis intervals
+            double initialYInterval = chart.ChartAreas[0].AxisY.Interval;
+            //SetAxisIntervals(chart, _initialZoomLevel, initialYInterval);
+            SetAutoAxisIntervals(chart);
 
             // Format y-axis labels to show values with 4 decimal places
             chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";
@@ -128,6 +161,7 @@ namespace KasPriceChart
         private void UpdateChartCore(Chart chart, List<DataPoint> dataPoints, bool logOrLinear, string seriesName, Color seriesColor)
         {
             chart.Series.Clear();
+            if (dataPoints == null || dataPoints.Count == 0) return;
 
             var series = CreateSeries(seriesName, seriesColor);
 
@@ -145,45 +179,43 @@ namespace KasPriceChart
 
             chart.Series.Add(series);
 
-            // Adjust y-axis for hashrate chart to show full values if it is the hashrate chart
             if (seriesName == "Hashrate")
             {
-                chart.ChartAreas[0].AxisY.LabelStyle.Format = "N0"; // Show full values in normal format
+                chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4"; 
                 chart.ChartAreas[0].AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
                 chart.ChartAreas[0].AxisY.Interval = 0; // Reset interval to allow automatic adjustment
             }
 
-            // Calculate yMin and yMax from the price data points if it is the price chart
             if (seriesName == "Price")
             {
                 double yMin = dataPoints.Where(dp => dp.Price > 0).Min(dp => dp.Price);
                 double yMax = dataPoints.Max(dp => dp.Price);
 
-                // Ensure the yMin is not less than 0
-                yMin = Math.Max(yMin, 0.01);
+                yMin = Math.Max(yMin, 0.001);
 
-                // Set the y-axis range to prevent excessive zooming out
                 chart.ChartAreas[0].AxisY.Minimum = yMin;
                 chart.ChartAreas[0].AxisY.Maximum = yMax;
             }
 
             if (logOrLinear)
             {
-                // Set y-axis to logarithmic
                 chart.ChartAreas[0].AxisY.IsLogarithmic = true;
                 chart.ChartAreas[0].AxisY.LogarithmBase = 10;
             }
             else
             {
-                // Ensure the y-axis is not set to logarithmic
                 chart.ChartAreas[0].AxisY.IsLogarithmic = false;
             }
+
+            // Calculate initial xInterval and yInterval for setting the axis intervals
+            double initialYInterval = chart.ChartAreas[0].AxisY.Interval; // Adjust as needed
 
             // Reset zoom to fully zoomed out
             ResetZoom(chart);
 
             chart.Invalidate();
         }
+
 
         private void UpdateChartWithPowerLawCore(Chart chart, List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear, Color lineColor, int extendLines)
         {
@@ -213,7 +245,7 @@ namespace KasPriceChart
                         seriesData.Points.AddXY(point.Timestamp, point.Price);
                     }
                 }
-                    
+
             }
 
             chart.Series.Add(seriesData);
@@ -265,7 +297,7 @@ namespace KasPriceChart
             chart.ChartAreas[0].AxisY.Maximum = yMax;
 
             // Ensure the yMin is not less than 0
-            yMin = Math.Max(yMin, 0.01);
+            yMin = Math.Max(yMin, 0.001);
 
             // Set the y-axis range to prevent excessive zooming out
             chart.ChartAreas[0].AxisY.Minimum = yMin;
@@ -296,7 +328,6 @@ namespace KasPriceChart
             chart.Series.Add(resistanceSeries);
             chart.Series.Add(fairPriceSeries);
 
-            ResetZoom(chart);
             chart.Invalidate();
 
             string report = GenerateReport(dataPoints, genesisDate, exponent, fairPriceConstant, rSquared, logDeltaGB, logPrices, sumX, sumY, sumXY, sumX2, sumY2);
@@ -328,7 +359,7 @@ namespace KasPriceChart
 
         public void ResetZoom(bool priceChart = true)
         {
-            if(priceChart)
+            if (priceChart)
             {
                 ResetZoom(_priceChart);
             }
@@ -338,82 +369,29 @@ namespace KasPriceChart
             }
         }
 
-        public void ZoomToFit(bool priceChart = true)
-        {
-            if (priceChart)
-            {
-                ZoomToFitAllDataPoints(_priceChart);
-            }
-            else
-            {
-                ZoomToFitAllDataPoints(_hashrateChart);
-            }
-        }
-
         public void ChangeDataPointSize(int newSize)
         {
             _dataPointSize = newSize;
             ChangeDataPointSizeInChart(_priceChart, _dataPointSize);
         }
+
         #endregion
 
 
         #region Mouse Events
+        private DateTime _lastZoomTime = DateTime.MinValue;
+
         private void Chart_MouseWheel(object sender, MouseEventArgs e)
         {
             var chart = (Chart)sender;
-            var xAxis = chart.ChartAreas[0].AxisX;
-            var yAxis = chart.ChartAreas[0].AxisY;
+            double zoomFactor = 0.9;
+            bool zoomIn = e.Delta > 0;
 
-            try
+            // Add debounce to limit frequency of zoom operations
+            if ((DateTime.Now - _lastZoomTime).TotalMilliseconds > 100) // Adjust threshold as needed
             {
-                double zoomFactor = 0.9; // This remains for zooming in
-                double minZoomSize = 0.001; // Minimum zoom size for zooming in further
-                double zoomOutFactor = 1.1; // Factor for incremental zooming out
-
-                // Get mouse position in axis values
-                double mouseXValue = xAxis.PixelPositionToValue(e.Location.X);
-                double mouseYValue = yAxis.PixelPositionToValue(e.Location.Y);
-
-                if (e.Delta > 0) // Zoom in
-                {
-                    double posXStart = mouseXValue - (mouseXValue - xAxis.ScaleView.ViewMinimum) * zoomFactor;
-                    double posXFinish = mouseXValue + (xAxis.ScaleView.ViewMaximum - mouseXValue) * zoomFactor;
-                    double posYStart = mouseYValue - (mouseYValue - yAxis.ScaleView.ViewMinimum) * zoomFactor;
-                    double posYFinish = mouseYValue + (yAxis.ScaleView.ViewMaximum - mouseYValue) * zoomFactor;
-
-                    if ((posXFinish - posXStart) > minZoomSize && (posYFinish - posYStart) > minZoomSize)
-                    {
-                        xAxis.ScaleView.Zoom(posXStart, posXFinish);
-                        yAxis.ScaleView.Zoom(posYStart, posYFinish);
-                    }
-                }
-                else if (e.Delta < 0) // Zoom out
-                {
-                    double posXStart = mouseXValue - (mouseXValue - xAxis.ScaleView.ViewMinimum) * zoomOutFactor;
-                    double posXFinish = mouseXValue + (xAxis.ScaleView.ViewMaximum - mouseXValue) * zoomOutFactor;
-                    double posYStart = mouseYValue - (mouseYValue - yAxis.ScaleView.ViewMinimum) * zoomOutFactor;
-                    double posYFinish = mouseYValue + (yAxis.ScaleView.ViewMaximum - mouseYValue) * zoomOutFactor;
-
-                    xAxis.ScaleView.Zoom(posXStart, posXFinish);
-                    yAxis.ScaleView.Zoom(posYStart, posYFinish);
-                }
-
-                // Adjust x-axis label format based on zoom level
-                double range = xAxis.ScaleView.ViewMaximum - xAxis.ScaleView.ViewMinimum;
-                if (range > 365) // If the range is greater than a year
-                {
-                    xAxis.LabelStyle.Format = "yyyy"; // Yearly format
-                }
-                else
-                {
-                    xAxis.LabelStyle.Format = "dd-MM-yyyy\nhh:mm:ss tt"; // Daily format with time
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log or handle exception as needed
-                Thread.Sleep(100);
+                ZoomChart(chart, zoomFactor, zoomIn);
+                _lastZoomTime = DateTime.Now;
             }
         }
 
@@ -440,44 +418,53 @@ namespace KasPriceChart
 
             if (e.Button == MouseButtons.Left)
             {
-                chart.Cursor = Cursors.Default;
+                chart.Cursor = Cursors.Hand;
             }
             else if (e.Button == MouseButtons.Right)
-            {                
-                chart.Cursor = Cursors.Default;                               
+            {
+                chart.Cursor = Cursors.Hand;
             }
         }
 
         private void Chart_MouseMove(object sender, MouseEventArgs e)
-        {
-            var chart = (Chart)sender;
-            if (e.Button == MouseButtons.Right)
+        {           
+            if (e.Button == MouseButtons.Right && _panStartPoint != Point.Empty)
             {
+                var chart = (Chart)sender;
                 var xAxis = chart.ChartAreas[0].AxisX;
                 var yAxis = chart.ChartAreas[0].AxisY;
 
                 try
                 {
-                    double deltaX = xAxis.PixelPositionToValue(e.Location.X) - xAxis.PixelPositionToValue(_panStartPoint.X);
-                    double deltaY = yAxis.PixelPositionToValue(e.Location.Y) - yAxis.PixelPositionToValue(_panStartPoint.Y);
-                    double newXPosition = _xPanStartMin - deltaX;
-                    double newYPosition = _yPanStartMin - deltaY;
+                    // Calculate the difference between the start point and the current point
+                    double dx = e.Location.X - _panStartPoint.X;
+                    double dy = e.Location.Y - _panStartPoint.Y;
 
-                    // Ensure the new position values do not exceed bounds
-                    if (newXPosition < xAxis.Minimum) newXPosition = xAxis.Minimum;
-                    if (newXPosition > xAxis.Maximum - xAxis.ScaleView.Size) newXPosition = xAxis.Maximum - xAxis.ScaleView.Size;
+                    // Calculate the new view positions
+                    double xPixelRange = chart.ChartAreas[0].AxisX.ScaleView.Size;
+                    double yPixelRange = chart.ChartAreas[0].AxisY.ScaleView.Size;
+                    double xStart = xAxis.PixelPositionToValue(_panStartPoint.X);
+                    double xCurrent = xAxis.PixelPositionToValue(e.Location.X);
+                    double yStart = yAxis.PixelPositionToValue(_panStartPoint.Y);
+                    double yCurrent = yAxis.PixelPositionToValue(e.Location.Y);                    
 
-                    xAxis.ScaleView.Position = newXPosition;
-                    yAxis.ScaleView.Position = newYPosition;
+                    double xOffset = (xCurrent - xStart);
+                    double yOffset = (yCurrent - yStart);
+
+                    double newXMin = _xPanStartMin - xOffset;
+                    double newXMax = _xPanStartMax - xOffset;
+                    double newYMin = _yPanStartMin - yOffset;
+                    double newYMax = _yPanStartMax - yOffset;
+
+                    xAxis.ScaleView.Zoom(newXMin, newXMax);
+                    yAxis.ScaleView.Zoom(newYMin, newYMax);
+
+                    chart.Invalidate();
+                    chart.Update();
                 }
-                catch (OverflowException ex)
+                catch (ArgumentException ex)
                 {
-                    Thread.Sleep(500);
-                    //MessageBox.Show($"Overflow error during panning: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                catch (Exception ex)
-                {
-                    //MessageBox.Show($"An error occurred during panning: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // Handle the exception gracefully, for example, by logging the error or displaying a message
                 }
             }
         }
@@ -597,7 +584,7 @@ namespace KasPriceChart
 
             return report.ToString();
         }
-        
+
         private void TurnPanningOn(Chart chart)
         {
             _isPanning = true;
@@ -611,6 +598,9 @@ namespace KasPriceChart
             chart.ChartAreas[0].CursorX.IntervalOffset = 0;
             chart.ChartAreas[0].CursorY.Interval = 0;
             chart.ChartAreas[0].CursorY.IntervalOffset = 0;
+
+            chart.Invalidate();
+            chart.Update();
         }
 
         private void ResetZoom(Chart chart)
@@ -621,6 +611,9 @@ namespace KasPriceChart
             chartArea.AxisY.ScaleView.ZoomReset();
 
             chartArea.RecalculateAxesScale();
+
+            chart.Invalidate();
+            chart.Update();
         }
 
         private Series CreateSeries(string name, Color color, bool powerLawLines = false)
@@ -647,77 +640,7 @@ namespace KasPriceChart
                 ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
                 IsXValueIndexed = false
             };
-        }
-
-        private void ZoomToFitAllDataPoints(Chart chart)
-        {
-            // Variables to hold the overall min and max values
-            double xMin = double.MaxValue, xMax = double.MinValue;
-            double yMin = double.MaxValue, yMax = double.MinValue;
-
-            // Loop through all series in the chart
-            foreach (var series in chart.Series)
-            {
-                // Ensure the series has data points
-                if (series.Points.Count > 0)
-                {
-                    foreach (var point in series.Points)
-                    {
-                        // Update the min and max values for X and Y
-                        xMin = Math.Min(xMin, point.XValue);
-                        xMax = Math.Max(xMax, point.XValue);
-
-                        // Ensure no invalid data for Y values (avoid NaN, Infinity)
-                        double yValue = point.YValues.Min();
-                        if (!double.IsNaN(yValue) && !double.IsInfinity(yValue))
-                        {
-                            yMin = Math.Min(yMin, yValue);
-                            yMax = Math.Max(yMax, yValue);
-                        }
-                    }
-                }
-            }
-
-            // Ensure we found valid data points
-            if (xMin < double.MaxValue && xMax > double.MinValue && yMin < double.MaxValue && yMax > double.MinValue)
-            {
-                // Handle potential issues like range inversion (e.g., yMin > yMax)
-                if (xMin == xMax)
-                {
-                    xMin -= 1;  // Prevent the zoom from being zero or invalid
-                    xMax += 1;
-                }
-
-                if (yMin == yMax)
-                {
-                    yMin -= 1;  // Prevent the zoom from being zero or invalid
-                    yMax += 1;
-                }
-
-                // Ensure the ranges are within reasonable bounds to avoid extreme zooming
-                const double maxRange = 1e6;  // You can adjust this to suit your data
-                xMin = Math.Max(xMin, 0);  // Ensure xMin is non-negative
-                xMax = Math.Min(xMax, maxRange);
-                yMin = Math.Max(yMin, 0);  // Ensure yMin is non-negative
-                yMax = Math.Min(yMax, maxRange);
-
-                // Adjust the axis view to include all points
-                try
-                {
-                    var chartArea = chart.ChartAreas[0];
-                    chartArea.AxisX.ScaleView.Zoom(xMin, xMax);
-                    chartArea.AxisY.ScaleView.Zoom(yMin, yMax);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error while adjusting zoom: {ex.Message}", "Zoom Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-            else
-            {
-                MessageBox.Show("No data points found to zoom to fit.", "Zoom Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
+        }      
 
         private void ChangeDataPointSizeInChart(Chart chart, int newSize)
         {
@@ -728,7 +651,141 @@ namespace KasPriceChart
             }
         }
 
+        private void ZoomChart(Chart chart, double zoomFactor, bool zoomIn)
+        {
+            var xAxis = chart.ChartAreas[0].AxisX;
+            var yAxis = chart.ChartAreas[0].AxisY;
+
+            double minZoomSize = 0.0001; // Minimum zoom size to prevent excessive zoom-in
+            double zoomOutFactor = 1 / zoomFactor; // Factor for zooming out
+
+            try
+            {
+                // Get the current visible range
+                double xRangeStart = xAxis.ScaleView.ViewMinimum;
+                double xRangeEnd = xAxis.ScaleView.ViewMaximum;
+                double yRangeStart = yAxis.ScaleView.ViewMinimum;
+                double yRangeEnd = yAxis.ScaleView.ViewMaximum;
+
+                // Calculate the midpoints of the current visible range
+                double xCenter = (xRangeStart + xRangeEnd) / 2;
+                double yCenter = (yRangeStart + yRangeEnd) / 2;
+
+                // Calculate the new zoom ranges for X-axis
+                double xRangeHalf = (xRangeEnd - xRangeStart) / 2;
+                double newXHalf = xRangeHalf * (zoomIn ? zoomFactor : zoomOutFactor);
+                double posXStart = xCenter - newXHalf;
+                double posXFinish = xCenter + newXHalf;
+
+                // Enforce axis bounds for X-axis
+                posXStart = Math.Max(xAxis.Minimum, posXStart);
+                posXFinish = Math.Min(xAxis.Maximum, posXFinish);
+
+                double posYStart, posYFinish;
+
+                if (yAxis.IsLogarithmic)
+                {
+                    // Calculate the center value for the y-axis
+                    double centerYValue = Math.Pow(10, (Math.Log10(yAxis.ScaleView.ViewMinimum) + Math.Log10(yAxis.ScaleView.ViewMaximum)) / 2);
+
+                    // Ensure the value is positive and above the minimum threshold for logarithmic scales
+                    double centerYValueValid = Math.Max(centerYValue, yAxis.Minimum);
+                    double maximumAutoSize = Math.Max(yAxis.MaximumAutoSize, yAxis.Minimum);
+                    double viewMinValid = Math.Max(yAxis.ScaleView.ViewMinimum, yAxis.Minimum);
+                    double viewMaxValid = Math.Max(yAxis.ScaleView.ViewMaximum, yAxis.Minimum);
+
+                    if (centerYValueValid > 0 && viewMinValid > 0 && viewMaxValid > 0)
+                    {
+                        double logCenterYValue = Math.Log10(centerYValueValid);
+                        double logViewMin = Math.Log10(viewMinValid);
+                        double logViewMax = Math.Log10(viewMaxValid);
+                        double logMaxAutoSize = Math.Log10(maximumAutoSize);
+
+                        // Adjust zoom out factor for logarithmic scale to control zooming more precisely using percentages
+                        double adjustedZoomOutFactor = zoomIn ? zoomFactor : 1 / (1 + (zoomFactor - 1) / 10); // Smaller steps for zooming out
+
+                        // Step calculation based on percentages
+                        posYStart = Math.Pow(10, logCenterYValue - (logCenterYValue - logViewMin) * adjustedZoomOutFactor);
+                        posYFinish = Math.Pow(10, logCenterYValue + (logMaxAutoSize - logCenterYValue) * adjustedZoomOutFactor);
+
+                        // Ensure calculated positions remain within valid range
+                        posYStart = Math.Max(yAxis.Minimum, posYStart);
+                        posYFinish = Math.Min(yAxis.Maximum, posYFinish); // Ensure posYFinish is not below minimum
+                    }
+                    else
+                    {
+                        // Handle cases where values are not valid for log scale
+                        posYStart = yAxis.ScaleView.ViewMinimum;
+                        posYFinish = yAxis.ScaleView.ViewMaximum;
+                    }
+                }
+                else
+                {
+                    // Linear scale adjustments for Y-axis
+                    double yRangeHalf = (yRangeEnd - yRangeStart) / 2;
+                    double newYHalf = yRangeHalf * (zoomIn ? zoomFactor : zoomOutFactor);
+                    posYStart = yCenter - newYHalf;
+                    posYFinish = yCenter + newYHalf;
+
+                    // Enforce bounds
+                    posYStart = Math.Max(yAxis.Minimum, posYStart);
+                    posYFinish = Math.Min(yAxis.Maximum, posYFinish);
+                }
+
+                // Ensure zoom size does not fall below the minimum threshold
+                if ((posXFinish - posXStart) > minZoomSize && (posYFinish - posYStart) > minZoomSize)
+                {
+                    xAxis.ScaleView.Zoom(posXStart, posXFinish);
+                    yAxis.ScaleView.Zoom(posYStart, posYFinish);
+                }
+
+                // Dynamically update axis intervals using your method
+                SetAutoAxisIntervals(chart);
+
+                // Redraw the chart
+                chart.Invalidate();
+                chart.Update();
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions gracefully
+                System.Diagnostics.Debug.WriteLine($"Error during zooming: {ex.Message}");
+            }
+        }
+
+
+
+        private void SetAutoAxisIntervals(Chart chart)
+        {
+            var xAxis = chart.ChartAreas[0].AxisX;
+
+            // Set IntervalAutoMode to VariableCount for automatic intervals
+            xAxis.IntervalAutoMode = IntervalAutoMode.VariableCount;
+
+            // Optionally disable manually set intervals
+            xAxis.Interval = 0;
+
+            // Ensure labels are enabled and auto-fitting is allowed
+            xAxis.LabelStyle.Enabled = true;
+            xAxis.IsLabelAutoFit = true;
+
+            // Optionally set label format for better readability
+            xAxis.LabelStyle.Format = "MMM dd-yy\nhh:mm tt";
+        }
+
+
         #endregion
 
     }
+
+
+
+
+
 }
+
+
+
+
+
+

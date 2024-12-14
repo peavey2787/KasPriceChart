@@ -81,7 +81,7 @@ namespace KasPriceChart
             _dataPoints.Sort((x, y) => x.Timestamp.CompareTo(y.Timestamp));
         }
 
-        public static List<DataPoint> FilterDataPoints(List<DataPoint> dataPoints, string timespan)
+        public static List<DataPoint> FilterDataPointsForView(List<DataPoint> dataPoints, string timespan)
         {
             // Validate and parse the timespan string
             var match = System.Text.RegularExpressions.Regex.Match(timespan, @"^(\d+)\s*(minute|minutes|mins|hour|hours|hr|hrs|day|days|week|weeks|month|months|year|years)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
@@ -195,6 +195,20 @@ namespace KasPriceChart
 
             return filteredDataPoints;
         }
+
+        public static List<DataPoint> FilterDataPointsByDateRange(List<DataPoint> dataPoints, DateTime startDate, DateTime endDate)
+        {
+            List<DataPoint> filteredDataPoints = new List<DataPoint>();
+            foreach (var point in dataPoints)
+            {
+                if (point.Timestamp >= startDate && point.Timestamp <= endDate)
+                {
+                    filteredDataPoints.Add(point);
+                }
+            }
+            return filteredDataPoints;
+        }
+
 
         public static (double latestPrice, double latestHashrate, DateTime latestTimestamp) GetLatestData(List<DataPoint> dataPoints)
         {

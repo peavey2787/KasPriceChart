@@ -55,31 +55,35 @@
             this.chart2 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPagePrice = new System.Windows.Forms.TabPage();
+            this.btnShowSettingsBox = new System.Windows.Forms.Button();
+            this.groupBoxSettings = new System.Windows.Forms.GroupBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
+            this.dateTimePickerEnd = new System.Windows.Forms.DateTimePicker();
+            this.dateTimePickerStart = new System.Windows.Forms.DateTimePicker();
+            this.lblDataPointSize = new System.Windows.Forms.Label();
+            this.trackBarDataPointSize = new System.Windows.Forms.TrackBar();
+            this.txtExtendLines = new System.Windows.Forms.TextBox();
+            this.btnResetDates = new System.Windows.Forms.Button();
+            this.chkLogLinear = new System.Windows.Forms.CheckBox();
+            this.btnResetZoom = new System.Windows.Forms.Button();
+            this.chkPowerLawLines = new System.Windows.Forms.CheckBox();
+            this.cmbViewTimspan = new System.Windows.Forms.ComboBox();
+            this.lblExtendLines = new System.Windows.Forms.Label();
+            this.btnShowMore = new System.Windows.Forms.Button();
+            this.lblRValue = new System.Windows.Forms.Label();
+            this.richTextBoxLog = new System.Windows.Forms.RichTextBox();
             this.tabPageHashrate = new System.Windows.Forms.TabPage();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.cmbViewTimspan = new System.Windows.Forms.ComboBox();
-            this.chkPowerLawLines = new System.Windows.Forms.CheckBox();
-            this.richTextBoxLog = new System.Windows.Forms.RichTextBox();
-            this.lblRValue = new System.Windows.Forms.Label();
-            this.btnShowMore = new System.Windows.Forms.Button();
-            this.chkLogLinear = new System.Windows.Forms.CheckBox();
-            this.groupBoxSettings = new System.Windows.Forms.GroupBox();
-            this.btnResetZoom = new System.Windows.Forms.Button();
-            this.btnZoomToFit = new System.Windows.Forms.Button();
-            this.lblExtendLines = new System.Windows.Forms.Label();
-            this.txtExtendLines = new System.Windows.Forms.TextBox();
-            this.btnShowSettingsBox = new System.Windows.Forms.Button();
-            this.trackBarDataPointSize = new System.Windows.Forms.TrackBar();
-            this.lblDataPointSize = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chart2)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabPagePrice.SuspendLayout();
-            this.tabPageHashrate.SuspendLayout();
             this.groupBoxSettings.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarDataPointSize)).BeginInit();
+            this.tabPageHashrate.SuspendLayout();
             this.SuspendLayout();
             // 
             // chart1
@@ -311,16 +315,145 @@
             this.tabPagePrice.Text = "Price";
             this.tabPagePrice.UseVisualStyleBackColor = true;
             // 
-            // tabPageHashrate
+            // btnShowSettingsBox
             // 
-            this.tabPageHashrate.Controls.Add(this.chart2);
-            this.tabPageHashrate.Location = new System.Drawing.Point(4, 22);
-            this.tabPageHashrate.Name = "tabPageHashrate";
-            this.tabPageHashrate.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageHashrate.Size = new System.Drawing.Size(867, 367);
-            this.tabPageHashrate.TabIndex = 1;
-            this.tabPageHashrate.Text = "Hashrate";
-            this.tabPageHashrate.UseVisualStyleBackColor = true;
+            this.btnShowSettingsBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnShowSettingsBox.ForeColor = System.Drawing.Color.Black;
+            this.btnShowSettingsBox.Location = new System.Drawing.Point(5, 9);
+            this.btnShowSettingsBox.Name = "btnShowSettingsBox";
+            this.btnShowSettingsBox.Size = new System.Drawing.Size(31, 25);
+            this.btnShowSettingsBox.TabIndex = 5;
+            this.btnShowSettingsBox.Text = "<";
+            this.btnShowSettingsBox.UseVisualStyleBackColor = true;
+            this.btnShowSettingsBox.Click += new System.EventHandler(this.btnShowSettingsBox_Click);
+            // 
+            // groupBoxSettings
+            // 
+            this.groupBoxSettings.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
+            this.groupBoxSettings.Controls.Add(this.label2);
+            this.groupBoxSettings.Controls.Add(this.label1);
+            this.groupBoxSettings.Controls.Add(this.dateTimePickerEnd);
+            this.groupBoxSettings.Controls.Add(this.dateTimePickerStart);
+            this.groupBoxSettings.Controls.Add(this.lblDataPointSize);
+            this.groupBoxSettings.Controls.Add(this.trackBarDataPointSize);
+            this.groupBoxSettings.Controls.Add(this.txtExtendLines);
+            this.groupBoxSettings.Controls.Add(this.btnResetDates);
+            this.groupBoxSettings.Controls.Add(this.chkLogLinear);
+            this.groupBoxSettings.Controls.Add(this.btnResetZoom);
+            this.groupBoxSettings.Controls.Add(this.chkPowerLawLines);
+            this.groupBoxSettings.Controls.Add(this.cmbViewTimspan);
+            this.groupBoxSettings.Controls.Add(this.lblExtendLines);
+            this.groupBoxSettings.Location = new System.Drawing.Point(39, 3);
+            this.groupBoxSettings.Name = "groupBoxSettings";
+            this.groupBoxSettings.Size = new System.Drawing.Size(356, 151);
+            this.groupBoxSettings.TabIndex = 4;
+            this.groupBoxSettings.TabStop = false;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(114, 118);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(26, 13);
+            this.label2.TabIndex = 26;
+            this.label2.Text = "End";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(114, 96);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(29, 13);
+            this.label1.TabIndex = 25;
+            this.label1.Text = "Start";
+            // 
+            // dateTimePickerEnd
+            // 
+            this.dateTimePickerEnd.Location = new System.Drawing.Point(149, 116);
+            this.dateTimePickerEnd.Name = "dateTimePickerEnd";
+            this.dateTimePickerEnd.Size = new System.Drawing.Size(188, 20);
+            this.dateTimePickerEnd.TabIndex = 24;
+            this.dateTimePickerEnd.Value = new System.DateTime(2022, 2, 14, 14, 6, 0, 0);
+            this.dateTimePickerEnd.ValueChanged += new System.EventHandler(this.dateTimePickerEnd_ValueChanged);
+            // 
+            // dateTimePickerStart
+            // 
+            this.dateTimePickerStart.Location = new System.Drawing.Point(149, 90);
+            this.dateTimePickerStart.Name = "dateTimePickerStart";
+            this.dateTimePickerStart.Size = new System.Drawing.Size(188, 20);
+            this.dateTimePickerStart.TabIndex = 23;
+            this.dateTimePickerStart.Value = new System.DateTime(2022, 1, 14, 14, 6, 0, 0);
+            this.dateTimePickerStart.ValueChanged += new System.EventHandler(this.dateTimePickerStart_ValueChanged);
+            // 
+            // lblDataPointSize
+            // 
+            this.lblDataPointSize.AutoSize = true;
+            this.lblDataPointSize.Location = new System.Drawing.Point(4, 74);
+            this.lblDataPointSize.Name = "lblDataPointSize";
+            this.lblDataPointSize.Size = new System.Drawing.Size(80, 13);
+            this.lblDataPointSize.TabIndex = 22;
+            this.lblDataPointSize.Text = "Data Point Size";
+            // 
+            // trackBarDataPointSize
+            // 
+            this.trackBarDataPointSize.Location = new System.Drawing.Point(3, 39);
+            this.trackBarDataPointSize.Name = "trackBarDataPointSize";
+            this.trackBarDataPointSize.Size = new System.Drawing.Size(81, 45);
+            this.trackBarDataPointSize.TabIndex = 21;
+            this.trackBarDataPointSize.ValueChanged += new System.EventHandler(this.trackBarDataPointSize_ValueChanged);
+            // 
+            // txtExtendLines
+            // 
+            this.txtExtendLines.Location = new System.Drawing.Point(310, 42);
+            this.txtExtendLines.Name = "txtExtendLines";
+            this.txtExtendLines.Size = new System.Drawing.Size(41, 20);
+            this.txtExtendLines.TabIndex = 20;
+            this.txtExtendLines.Text = "365";
+            this.txtExtendLines.TextChanged += new System.EventHandler(this.txtExtendLines_TextChanged);
+            // 
+            // btnResetDates
+            // 
+            this.btnResetDates.ForeColor = System.Drawing.Color.Black;
+            this.btnResetDates.Location = new System.Drawing.Point(149, 66);
+            this.btnResetDates.Name = "btnResetDates";
+            this.btnResetDates.Size = new System.Drawing.Size(75, 21);
+            this.btnResetDates.TabIndex = 19;
+            this.btnResetDates.Text = "Reset Dates";
+            this.btnResetDates.UseVisualStyleBackColor = true;
+            this.btnResetDates.Click += new System.EventHandler(this.btnResetDates_Click);
+            // 
+            // chkLogLinear
+            // 
+            this.chkLogLinear.AutoSize = true;
+            this.chkLogLinear.Location = new System.Drawing.Point(87, 15);
+            this.chkLogLinear.Name = "chkLogLinear";
+            this.chkLogLinear.Size = new System.Drawing.Size(78, 17);
+            this.chkLogLinear.TabIndex = 17;
+            this.chkLogLinear.Text = "Log/Linear";
+            this.chkLogLinear.UseVisualStyleBackColor = true;
+            this.chkLogLinear.CheckedChanged += new System.EventHandler(this.chkLogLinear_CheckedChanged);
+            // 
+            // btnResetZoom
+            // 
+            this.btnResetZoom.ForeColor = System.Drawing.Color.Black;
+            this.btnResetZoom.Location = new System.Drawing.Point(5, 11);
+            this.btnResetZoom.Name = "btnResetZoom";
+            this.btnResetZoom.Size = new System.Drawing.Size(75, 21);
+            this.btnResetZoom.TabIndex = 18;
+            this.btnResetZoom.Text = "Reset Zoom";
+            this.btnResetZoom.UseVisualStyleBackColor = true;
+            this.btnResetZoom.Click += new System.EventHandler(this.btnResetZoom_Click);
+            // 
+            // chkPowerLawLines
+            // 
+            this.chkPowerLawLines.AutoSize = true;
+            this.chkPowerLawLines.Location = new System.Drawing.Point(87, 44);
+            this.chkPowerLawLines.Name = "chkPowerLawLines";
+            this.chkPowerLawLines.Size = new System.Drawing.Size(107, 17);
+            this.chkPowerLawLines.TabIndex = 16;
+            this.chkPowerLawLines.Text = "Power Law Lines";
+            this.chkPowerLawLines.UseVisualStyleBackColor = true;
+            this.chkPowerLawLines.CheckedChanged += new System.EventHandler(this.chkPowerLawLines_CheckedChanged);
             // 
             // cmbViewTimspan
             // 
@@ -348,42 +481,14 @@
             this.cmbViewTimspan.SelectedIndexChanged += new System.EventHandler(this.cmbViewTimspan_SelectedIndexChanged);
             this.cmbViewTimspan.TextUpdate += new System.EventHandler(this.cmbViewTimspan_TextUpdate);
             // 
-            // chkPowerLawLines
+            // lblExtendLines
             // 
-            this.chkPowerLawLines.AutoSize = true;
-            this.chkPowerLawLines.Location = new System.Drawing.Point(87, 44);
-            this.chkPowerLawLines.Name = "chkPowerLawLines";
-            this.chkPowerLawLines.Size = new System.Drawing.Size(107, 17);
-            this.chkPowerLawLines.TabIndex = 16;
-            this.chkPowerLawLines.Text = "Power Law Lines";
-            this.chkPowerLawLines.UseVisualStyleBackColor = true;
-            this.chkPowerLawLines.CheckedChanged += new System.EventHandler(this.chkPowerLawLines_CheckedChanged);
-            // 
-            // richTextBoxLog
-            // 
-            this.richTextBoxLog.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBoxLog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
-            this.richTextBoxLog.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(112)))), ((int)(((byte)(199)))), ((int)(((byte)(186)))));
-            this.richTextBoxLog.Location = new System.Drawing.Point(332, 56);
-            this.richTextBoxLog.Name = "richTextBoxLog";
-            this.richTextBoxLog.ReadOnly = true;
-            this.richTextBoxLog.Size = new System.Drawing.Size(527, 259);
-            this.richTextBoxLog.TabIndex = 1;
-            this.richTextBoxLog.Text = "";
-            this.richTextBoxLog.Visible = false;
-            // 
-            // lblRValue
-            // 
-            this.lblRValue.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblRValue.AutoSize = true;
-            this.lblRValue.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
-            this.lblRValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblRValue.Location = new System.Drawing.Point(537, 5);
-            this.lblRValue.Name = "lblRValue";
-            this.lblRValue.Size = new System.Drawing.Size(31, 16);
-            this.lblRValue.TabIndex = 2;
-            this.lblRValue.Text = "R² =";
-            this.lblRValue.Visible = false;
+            this.lblExtendLines.AutoSize = true;
+            this.lblExtendLines.Location = new System.Drawing.Point(202, 45);
+            this.lblExtendLines.Name = "lblExtendLines";
+            this.lblExtendLines.Size = new System.Drawing.Size(102, 13);
+            this.lblExtendLines.TabIndex = 15;
+            this.lblExtendLines.Text = "Extend Lines (days):";
             // 
             // btnShowMore
             // 
@@ -399,103 +504,42 @@
             this.btnShowMore.Visible = false;
             this.btnShowMore.Click += new System.EventHandler(this.btnShowMore_Click);
             // 
-            // chkLogLinear
+            // lblRValue
             // 
-            this.chkLogLinear.AutoSize = true;
-            this.chkLogLinear.Location = new System.Drawing.Point(87, 15);
-            this.chkLogLinear.Name = "chkLogLinear";
-            this.chkLogLinear.Size = new System.Drawing.Size(78, 17);
-            this.chkLogLinear.TabIndex = 17;
-            this.chkLogLinear.Text = "Log/Linear";
-            this.chkLogLinear.UseVisualStyleBackColor = true;
-            this.chkLogLinear.CheckedChanged += new System.EventHandler(this.chkLogLinear_CheckedChanged);
+            this.lblRValue.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblRValue.AutoSize = true;
+            this.lblRValue.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
+            this.lblRValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblRValue.Location = new System.Drawing.Point(537, 5);
+            this.lblRValue.Name = "lblRValue";
+            this.lblRValue.Size = new System.Drawing.Size(31, 16);
+            this.lblRValue.TabIndex = 2;
+            this.lblRValue.Text = "R² =";
+            this.lblRValue.Visible = false;
             // 
-            // groupBoxSettings
+            // richTextBoxLog
             // 
-            this.groupBoxSettings.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
-            this.groupBoxSettings.Controls.Add(this.lblDataPointSize);
-            this.groupBoxSettings.Controls.Add(this.trackBarDataPointSize);
-            this.groupBoxSettings.Controls.Add(this.txtExtendLines);
-            this.groupBoxSettings.Controls.Add(this.btnZoomToFit);
-            this.groupBoxSettings.Controls.Add(this.chkLogLinear);
-            this.groupBoxSettings.Controls.Add(this.btnResetZoom);
-            this.groupBoxSettings.Controls.Add(this.chkPowerLawLines);
-            this.groupBoxSettings.Controls.Add(this.cmbViewTimspan);
-            this.groupBoxSettings.Controls.Add(this.lblExtendLines);
-            this.groupBoxSettings.Location = new System.Drawing.Point(39, 0);
-            this.groupBoxSettings.Name = "groupBoxSettings";
-            this.groupBoxSettings.Size = new System.Drawing.Size(356, 151);
-            this.groupBoxSettings.TabIndex = 4;
-            this.groupBoxSettings.TabStop = false;
+            this.richTextBoxLog.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.richTextBoxLog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
+            this.richTextBoxLog.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(112)))), ((int)(((byte)(199)))), ((int)(((byte)(186)))));
+            this.richTextBoxLog.Location = new System.Drawing.Point(332, 56);
+            this.richTextBoxLog.Name = "richTextBoxLog";
+            this.richTextBoxLog.ReadOnly = true;
+            this.richTextBoxLog.Size = new System.Drawing.Size(527, 259);
+            this.richTextBoxLog.TabIndex = 1;
+            this.richTextBoxLog.Text = "";
+            this.richTextBoxLog.Visible = false;
             // 
-            // btnResetZoom
+            // tabPageHashrate
             // 
-            this.btnResetZoom.ForeColor = System.Drawing.Color.Black;
-            this.btnResetZoom.Location = new System.Drawing.Point(5, 11);
-            this.btnResetZoom.Name = "btnResetZoom";
-            this.btnResetZoom.Size = new System.Drawing.Size(75, 21);
-            this.btnResetZoom.TabIndex = 18;
-            this.btnResetZoom.Text = "Reset Zoom";
-            this.btnResetZoom.UseVisualStyleBackColor = true;
-            this.btnResetZoom.Click += new System.EventHandler(this.btnResetZoom_Click);
-            // 
-            // btnZoomToFit
-            // 
-            this.btnZoomToFit.ForeColor = System.Drawing.Color.Black;
-            this.btnZoomToFit.Location = new System.Drawing.Point(6, 41);
-            this.btnZoomToFit.Name = "btnZoomToFit";
-            this.btnZoomToFit.Size = new System.Drawing.Size(75, 21);
-            this.btnZoomToFit.TabIndex = 19;
-            this.btnZoomToFit.Text = "Zoom to Fit";
-            this.btnZoomToFit.UseVisualStyleBackColor = true;
-            this.btnZoomToFit.Click += new System.EventHandler(this.btnZoomToFit_Click);
-            // 
-            // lblExtendLines
-            // 
-            this.lblExtendLines.AutoSize = true;
-            this.lblExtendLines.Location = new System.Drawing.Point(202, 45);
-            this.lblExtendLines.Name = "lblExtendLines";
-            this.lblExtendLines.Size = new System.Drawing.Size(102, 13);
-            this.lblExtendLines.TabIndex = 15;
-            this.lblExtendLines.Text = "Extend Lines (days):";
-            // 
-            // txtExtendLines
-            // 
-            this.txtExtendLines.Location = new System.Drawing.Point(310, 42);
-            this.txtExtendLines.Name = "txtExtendLines";
-            this.txtExtendLines.Size = new System.Drawing.Size(41, 20);
-            this.txtExtendLines.TabIndex = 20;
-            this.txtExtendLines.Text = "365";
-            this.txtExtendLines.TextChanged += new System.EventHandler(this.txtExtendLines_TextChanged);
-            // 
-            // btnShowSettingsBox
-            // 
-            this.btnShowSettingsBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnShowSettingsBox.ForeColor = System.Drawing.Color.Black;
-            this.btnShowSettingsBox.Location = new System.Drawing.Point(5, 7);
-            this.btnShowSettingsBox.Name = "btnShowSettingsBox";
-            this.btnShowSettingsBox.Size = new System.Drawing.Size(31, 25);
-            this.btnShowSettingsBox.TabIndex = 5;
-            this.btnShowSettingsBox.Text = "<";
-            this.btnShowSettingsBox.UseVisualStyleBackColor = true;
-            this.btnShowSettingsBox.Click += new System.EventHandler(this.btnShowSettingsBox_Click);
-            // 
-            // trackBarDataPointSize
-            // 
-            this.trackBarDataPointSize.Location = new System.Drawing.Point(6, 90);
-            this.trackBarDataPointSize.Name = "trackBarDataPointSize";
-            this.trackBarDataPointSize.Size = new System.Drawing.Size(95, 45);
-            this.trackBarDataPointSize.TabIndex = 21;
-            this.trackBarDataPointSize.ValueChanged += new System.EventHandler(this.trackBarDataPointSize_ValueChanged);
-            // 
-            // lblDataPointSize
-            // 
-            this.lblDataPointSize.AutoSize = true;
-            this.lblDataPointSize.Location = new System.Drawing.Point(6, 74);
-            this.lblDataPointSize.Name = "lblDataPointSize";
-            this.lblDataPointSize.Size = new System.Drawing.Size(80, 13);
-            this.lblDataPointSize.TabIndex = 22;
-            this.lblDataPointSize.Text = "Data Point Size";
+            this.tabPageHashrate.Controls.Add(this.chart2);
+            this.tabPageHashrate.Location = new System.Drawing.Point(4, 22);
+            this.tabPageHashrate.Name = "tabPageHashrate";
+            this.tabPageHashrate.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageHashrate.Size = new System.Drawing.Size(867, 367);
+            this.tabPageHashrate.TabIndex = 1;
+            this.tabPageHashrate.Text = "Hashrate";
+            this.tabPageHashrate.UseVisualStyleBackColor = true;
             // 
             // MainForm
             // 
@@ -519,10 +563,10 @@
             this.tabControl1.ResumeLayout(false);
             this.tabPagePrice.ResumeLayout(false);
             this.tabPagePrice.PerformLayout();
-            this.tabPageHashrate.ResumeLayout(false);
             this.groupBoxSettings.ResumeLayout(false);
             this.groupBoxSettings.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarDataPointSize)).EndInit();
+            this.tabPageHashrate.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -558,12 +602,16 @@
         private System.Windows.Forms.CheckBox chkLogLinear;
         private System.Windows.Forms.GroupBox groupBoxSettings;
         private System.Windows.Forms.Button btnResetZoom;
-        private System.Windows.Forms.Button btnZoomToFit;
+        private System.Windows.Forms.Button btnResetDates;
         private System.Windows.Forms.TextBox txtExtendLines;
         private System.Windows.Forms.Label lblExtendLines;
         private System.Windows.Forms.Button btnShowSettingsBox;
         private System.Windows.Forms.Label lblDataPointSize;
         private System.Windows.Forms.TrackBar trackBarDataPointSize;
+        private System.Windows.Forms.DateTimePicker dateTimePickerStart;
+        private System.Windows.Forms.DateTimePicker dateTimePickerEnd;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label1;
     }
 }
 

@@ -19,8 +19,11 @@ namespace KasPriceChart
         private GraphPlotter _graphPlotter;
         private Timer _timer;
         private DateTime _lastFetchTime = DateTime.MinValue;
+        private DateTime _ogStartTime;
+        private DateTime _ogEndTime;
         private int _countdownTime;
         private bool appInControl = false;
+        private bool _fetchingData = false;        
         #endregion
 
 
@@ -54,6 +57,8 @@ namespace KasPriceChart
         #region Start/Stop
         private void MainForm_Load(object sender, EventArgs e)
         {
+            appInControl = true;
+
             string masterFilePath = Path.Combine(Directory.GetCurrentDirectory(), "master.csv");
             
             if (CSVHandler.MasterFileExists(masterFilePath))
@@ -62,9 +67,7 @@ namespace KasPriceChart
                 if (dataPoints.Count > 0)
                 {
                     _dataManager.SetData(dataPoints);
-                    var earliestDate = dataPoints.Min(dp => dp.Timestamp);
-                    var latestDate = dataPoints.Max(dp => dp.Timestamp);
-                    lblDataLoaded.Text = $"Previous data loaded from: {earliestDate} through {latestDate}";
+                    SetDatePickers(dataPoints);
                 }
             }
             else
@@ -74,7 +77,7 @@ namespace KasPriceChart
             }
 
             // Reload last saved state for controls
-            appInControl = true;
+            
             LoadControlStates();
 
             // Auto start if enabled
@@ -111,6 +114,7 @@ namespace KasPriceChart
 
         #region User Action Controls
         
+
         #region Button Clicks
         private async void btnStart_Click(object sender, EventArgs e)
         {
@@ -161,19 +165,24 @@ namespace KasPriceChart
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                List<DataPoint> uploadedData;
+                List<DataPoint> uploadedDataPoints;
 
-                uploadedData = CSVHandler.ImportData(openFileDialog.FileNames);                
+                uploadedDataPoints = CSVHandler.ImportData(openFileDialog.FileNames);
 
-                bool useOnlyUploaded = chkUseOnlyUploadedData.Checked;
-                if (useOnlyUploaded)
+                if (uploadedDataPoints.Count > 0)
                 {
-                    _dataManager.SetData(uploadedData);
-                }
-                else
-                {
-                    _dataManager.MergeData(uploadedData);
-                    SaveData();
+                    bool useOnlyUploaded = chkUseOnlyUploadedData.Checked;
+                    if (useOnlyUploaded)
+                    {
+                        _dataManager.SetData(uploadedDataPoints);
+                    }
+                    else
+                    {
+                        _dataManager.MergeData(uploadedDataPoints);
+                        SaveData();
+                    }
+
+                    SetDatePickers(uploadedDataPoints);
                 }
                 
                 // Select All Data 
@@ -194,7 +203,7 @@ namespace KasPriceChart
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
                 string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
-                List<DataPoint> dataPoints = DataManager.FilterDataPoints(_dataManager.GetData(), selectedTimespan);
+                List<DataPoint> dataPoints = DataManager.FilterDataPointsForView(_dataManager.GetData(), selectedTimespan);
                 CSVHandler.ExportData(dataPoints, saveFileDialog.FileName);
                 MessageBox.Show("Data exported successfully.", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -223,9 +232,14 @@ namespace KasPriceChart
             _graphPlotter.ResetZoom();
         }
 
-        private void btnZoomToFit_Click(object sender, EventArgs e)
+        private async void btnResetDates_Click(object sender, EventArgs e)
         {
-            _graphPlotter.ZoomToFit();
+            appInControl = true;
+            dateTimePickerStart.Value = _ogStartTime;
+            dateTimePickerEnd.Value = _ogEndTime;
+            appInControl = false;
+
+            await FetchData();
         }
 
         private void btnShowSettingsBox_Click(object sender, EventArgs e)
@@ -393,10 +407,37 @@ namespace KasPriceChart
                 SaveControlStates();
             }
         }
+
+        private async void dateTimePickerStart_ValueChanged(object sender, EventArgs e)
+        {
+            if (!appInControl)
+            {
+                await FetchData();
+            }
+        }
+
+        private async void dateTimePickerEnd_ValueChanged(object sender, EventArgs e)
+        {
+            if(!appInControl)
+            {
+                await FetchData();
+            }            
+        }
         #endregion
 
 
         #region Helpers
+
+        private void SetDatePickers(List<DataPoint> dataPoints)
+        {
+            var earliestDate = dataPoints.Min(dp => dp.Timestamp);
+            var latestDate = dataPoints.Max(dp => dp.Timestamp);
+            dateTimePickerStart.Value = earliestDate;
+            dateTimePickerEnd.Value = latestDate;
+            _ogStartTime = earliestDate;
+            _ogEndTime = latestDate;
+            lblDataLoaded.Text = $"Data loaded from: {earliestDate}  through  {latestDate}";
+        }
         private void ToggleSettingsBox()
         {
             if (btnShowSettingsBox.Text == "<")
@@ -412,38 +453,46 @@ namespace KasPriceChart
                 btnShowSettingsBox.Text = "<";
             }
         }
+
+
         private async Task<bool> FetchData()
         {
-            bool success = false;
-            TimeSpan timeSinceLastFetch = DateTime.Now - _lastFetchTime;
-            var minValue = int.TryParse(txtInterval.Text, out int parsedInterval) && parsedInterval >= MIN_TIME_BETWEEN_API_CALLS ? parsedInterval : MIN_TIME_BETWEEN_API_CALLS;
-            if (timeSinceLastFetch.TotalMinutes >= minValue)
+            if (!_fetchingData)
             {
-                // Fetch data
-                var priceData = await _dataFetcher.FetchPriceData();
-                var hashrateData = await _dataFetcher.FetchHashrateData();
-                _dataManager.AddData(DateTime.Now, priceData, hashrateData);
-                _lastFetchTime = DateTime.Now; // Update the last fetch time
-                AppSettings.Save("LastFetchTime", _lastFetchTime.ToString("o"));
-
-                if (!chkUseOnlyUploadedData.Checked)
+                _fetchingData = true;
+                bool success = false;
+                TimeSpan timeSinceLastFetch = DateTime.Now - _lastFetchTime;
+                var minValue = int.TryParse(txtInterval.Text, out int parsedInterval) && parsedInterval >= MIN_TIME_BETWEEN_API_CALLS ? parsedInterval : MIN_TIME_BETWEEN_API_CALLS;
+                if (timeSinceLastFetch.TotalMinutes >= minValue)
                 {
-                    // Save updated data to master.csv
-                    SaveData();
+                    // Fetch data
+                    var priceData = await _dataFetcher.FetchPriceData();
+                    var hashrateData = await _dataFetcher.FetchHashrateData();
+                    _dataManager.AddData(DateTime.Now, priceData, hashrateData);
+                    _lastFetchTime = DateTime.Now; // Update the last fetch time
+                    AppSettings.Save("LastFetchTime", _lastFetchTime.ToString("o"));
+
+                    if (!chkUseOnlyUploadedData.Checked)
+                    {
+                        // Save updated data to master.csv
+                        SaveData();
+                    }
+                    success = true;
                 }
-                success = true;
-            }
-            else
-            {
-                // Calculate remaining seconds until min. minutes have passed
-                double remainingSeconds = (minValue * 60) - timeSinceLastFetch.TotalSeconds;
-                _countdownTime = (int)Math.Ceiling(remainingSeconds);
-            }
+                else
+                {
+                    // Calculate remaining seconds until min. minutes have passed
+                    double remainingSeconds = (minValue * 60) - timeSinceLastFetch.TotalSeconds;
+                    _countdownTime = (int)Math.Ceiling(remainingSeconds);
+                }
 
-            ShowTheChart();
-
-            return success;
+                ShowTheChart();
+                _fetchingData = false;
+                return success;
+            }
+            return false;
         }
+
 
         private void SaveData()
         {
@@ -537,9 +586,31 @@ namespace KasPriceChart
 
         private void ShowThePriceChart(bool showPowerLawLines = false, bool logOrLinear = false)
         {
+            DateTime startDate;
+            DateTime endDate;
+
+            if (dateTimePickerStart.InvokeRequired)
+            {
+                startDate = (DateTime)dateTimePickerStart.Invoke(new Func<DateTime>(() => dateTimePickerStart.Value));
+            }
+            else
+            {
+                startDate = dateTimePickerStart.Value;
+            }
+
+            if (dateTimePickerEnd.InvokeRequired)
+            {
+                endDate = (DateTime)dateTimePickerEnd.Invoke(new Func<DateTime>(() => dateTimePickerEnd.Value));
+            }
+            else
+            {
+                endDate = dateTimePickerEnd.Value;
+            }
+            
             // Filter data points for selected view
             string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
-            List<DataPoint> dataPoints = DataManager.FilterDataPoints(_dataManager.GetData(), selectedTimespan);
+            List<DataPoint> dataPoints = DataManager.FilterDataPointsForView(_dataManager.GetData(), selectedTimespan);
+            dataPoints = DataManager.FilterDataPointsByDateRange(dataPoints, startDate, endDate);
 
             // Get latest data and update labels
             var latestData = DataManager.GetLatestData(dataPoints);
@@ -549,7 +620,7 @@ namespace KasPriceChart
             if (showPowerLawLines)
             {
                 _graphPlotter.UpdatePriceWithPowerLaw(dataPoints, richTextBoxLog, lblRValue, logOrLinear, GetExtendLinesValue());
-            } 
+            }
             else
             {
                 _graphPlotter.UpdatePriceChart(dataPoints, logOrLinear);
@@ -560,7 +631,7 @@ namespace KasPriceChart
         {
             // Filter data points for selected view
             string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
-            List<DataPoint> dataPoints = DataManager.FilterDataPoints(_dataManager.GetData(), selectedTimespan);
+            List<DataPoint> dataPoints = DataManager.FilterDataPointsForView(_dataManager.GetData(), selectedTimespan);
 
             // Get latest data and update labels
             var latestData = DataManager.GetLatestData(dataPoints);
@@ -643,6 +714,7 @@ namespace KasPriceChart
 
 
         #endregion
+
 
 
 
