@@ -1,6 +1,6 @@
 # KasPriceChart
 
-![image](https://github.com/user-attachments/assets/0b81cc81-d4b8-45e7-a271-4d8c1ec4dea0)
+![image](https://github.com/user-attachments/assets/69091a53-0b05-4c07-9b83-794fad50f03f)
 
 
 <div style="color: red; font-weight: bold;">
