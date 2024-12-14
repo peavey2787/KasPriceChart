@@ -607,14 +607,26 @@ namespace KasPriceChart
         {
             var chartArea = chart.ChartAreas[0];
 
-            chartArea.AxisX.ScaleView.ZoomReset();
-            chartArea.AxisY.ScaleView.ZoomReset();
+            // Reset zoom for both axes
+            chartArea.AxisX.ScaleView.ZoomReset(0);
+            chartArea.AxisY.ScaleView.ZoomReset(0);
 
+            // Recalculate the axes to ensure proper updates
             chartArea.RecalculateAxesScale();
 
+            // Optionally, reset the axis intervals to auto mode
+            chartArea.AxisX.IntervalAutoMode = IntervalAutoMode.VariableCount;
+            chartArea.AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
+
+            // Optionally, reset any manually set intervals
+            chartArea.AxisX.Interval = 0;
+            chartArea.AxisY.Interval = 0;
+
+            // Invalidate and update the chart to reflect changes
             chart.Invalidate();
             chart.Update();
         }
+
 
         private Series CreateSeries(string name, Color color, bool powerLawLines = false)
         {
