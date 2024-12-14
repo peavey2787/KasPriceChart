@@ -1,6 +1,6 @@
 # KasPriceChart
 
-![image](https://github.com/user-attachments/assets/e6fd19be-9507-4fd5-9e5c-2816f44c61a5)
+![image](https://github.com/user-attachments/assets/69091a53-0b05-4c07-9b83-794fad50f03f)
 
 
 <div style="color: red; font-weight: bold;">
@@ -14,6 +14,10 @@ Click Start to begin fetching and storing real-time data for Kaspa's price and h
 
 Auto Start will click start for you when the app first starts.
 
-If you don't want to use real-time data you can check mark Use only uploaded data
+If you don't want to use real-time data you can check mark Use only uploaded data.
+
+Right mouse button will pan the chart.
+
+Click and drag the left mouse button to zoom in on a specific area.
 
 Change the drop down menu to change the timespan of data shown in the chart. The number shown in the drop down menu's text box can actually be edited to further customize the data shown.
