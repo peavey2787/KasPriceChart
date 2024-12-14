@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -83,6 +84,7 @@ namespace KasPriceChart
             }
             ShowTheChart();
             ShowTheHashrateChart();
+
             appInControl = false;
         }
         #endregion
@@ -200,16 +202,41 @@ namespace KasPriceChart
 
         private void btnShowMore_Click(object sender, EventArgs e)
         {
-            if (btnShowMore.Text == "Show More")
+            if (!appInControl)
             {
-                richTextBoxLog.Visible = true;
-                btnShowMore.Text = "Show Less";
+                if (btnShowMore.Text == "Show More")
+                {
+                    richTextBoxLog.Visible = true;
+                    btnShowMore.Text = "Show Less";
+                }
+                else if (btnShowMore.Text == "Show Less")
+                {
+                    richTextBoxLog.Visible = false;
+                    btnShowMore.Text = "Show More";
+                }
+                SaveControlStates();
             }
-            else if (btnShowMore.Text == "Show Less")
+        }
+
+        private void btnResetZoom_Click(object sender, EventArgs e)
+        {
+            _graphPlotter.ResetZoom();
+        }
+
+        private void btnZoomToFit_Click(object sender, EventArgs e)
+        {
+            _graphPlotter.ZoomToFit();
+        }
+
+        private void btnShowSettingsBox_Click(object sender, EventArgs e)
+        {
+            ToggleSettingsBox();
+
+            if (!appInControl)
             {
-                richTextBoxLog.Visible = false;
-                btnShowMore.Text = "Show More";
+                SaveControlStates();
             }
+
         }
         #endregion        
 
@@ -249,6 +276,7 @@ namespace KasPriceChart
                 ShowTheChart();
             }
         }
+
         private void chkLogLinear_CheckedChanged(object sender, EventArgs e)
         {
             if (!appInControl)
@@ -260,6 +288,7 @@ namespace KasPriceChart
         #endregion
 
 
+        #region Textboxes
         private void txtInterval_TextChanged(object sender, EventArgs e)
         {
             if (!appInControl)
@@ -281,11 +310,58 @@ namespace KasPriceChart
             }
         }
 
+        private void txtExtendLines_TextChanged(object sender, EventArgs e)
+        {
+            if (!appInControl)
+            {
+                string input = txtExtendLines.Text.Trim();  // Get and trim any extra spaces from the input
+
+                // Check if the input is empty
+                if (string.IsNullOrEmpty(input))
+                {
+                    // Optionally, set the TextBox to a default value or handle as needed
+                    txtExtendLines.BackColor = Color.White; // Reset the background color if input is empty
+                    return;
+                }
+
+                // Check if the input is a valid non-negative integer
+                if (int.TryParse(input, out int result))
+                {
+                    // Ensure the value is non-negative
+                    if (result < 0)
+                    {
+                        txtExtendLines.BackColor = Color.LightPink;  // Highlight the textbox for invalid input
+                        MessageBox.Show("'Extend Lines' cannot be negative. Please enter a non-negative value.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    else
+                    {
+                        txtExtendLines.BackColor = Color.White; // Reset the background color if input is valid
+                    }
+                }
+                else
+                {
+                    // If the input is not a valid integer, highlight the textbox and show an error
+                    txtExtendLines.BackColor = Color.LightPink;  // Highlight the textbox for invalid input
+                    MessageBox.Show("Invalid input. Please enter a valid non-negative integer value for 'Extend Lines'.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                ShowTheChart();
+
+                SaveControlStates();
+            }
+        }
+        #endregion
+
+
+        #region Combobox/Drop down menu
         private async void cmbViewTimspan_TextUpdate(object sender, EventArgs e)
         {
             if (!appInControl)
             {
                 await FetchData();
+                SaveControlStates();
             }
         }
 
@@ -294,18 +370,48 @@ namespace KasPriceChart
             if (!appInControl)
             {
                 await FetchData();
+                SaveControlStates();
             }
         }
+        #endregion
+
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
             
         }
 
+        private void trackBarDataPointSize_ValueChanged(object sender, EventArgs e)
+        {
+            if (!appInControl)
+            {
+                // Get the new size from the TrackBar
+                int newSize = trackBarDataPointSize.Value;
+
+                _graphPlotter.ChangeDataPointSize(newSize);
+
+                SaveControlStates();
+            }
+        }
         #endregion
 
 
         #region Helpers
+        private void ToggleSettingsBox()
+        {
+            if (btnShowSettingsBox.Text == "<")
+            {
+                // Show less
+                groupBoxSettings.Visible = false;
+                btnShowSettingsBox.Text = ">";
+            }
+            else if (btnShowSettingsBox.Text == ">")
+            {
+                // Show more
+                groupBoxSettings.Visible = true;
+                btnShowSettingsBox.Text = "<";
+            }
+        }
         private async Task<bool> FetchData()
         {
             bool success = false;
@@ -352,6 +458,11 @@ namespace KasPriceChart
             AppSettings.Save("UseOnlyUploadedData", chkUseOnlyUploadedData.Checked);
             AppSettings.Save("AutoStart", chkAutoStart.Checked);
             AppSettings.Save("UsePowerLaw", chkPowerLawLines.Checked);
+            AppSettings.Save("ShowOrHideSettings", btnShowSettingsBox.Text);
+            AppSettings.Save("LogOrLinear", chkLogLinear.Checked);
+            AppSettings.Save("ExtendLinesByDays", txtExtendLines.Text);
+            AppSettings.Save("DataPointSize", trackBarDataPointSize.Value);
+            AppSettings.Save("TimeSpanView", cmbViewTimspan.Text);            
         }
 
         private void LoadControlStates()
@@ -370,6 +481,37 @@ namespace KasPriceChart
 
             var UsePowerLaw = AppSettings.Load<bool>("UsePowerLaw");
             chkPowerLawLines.Checked = UsePowerLaw;
+
+            var logOrLinear = AppSettings.Load<bool>("LogOrLinear");
+            chkLogLinear.Checked = logOrLinear;
+
+            var extendLinesByDays = AppSettings.Load<string>("ExtendLinesByDays");
+            if (!string.IsNullOrEmpty(extendLinesByDays))
+            {
+                txtExtendLines.Text = extendLinesByDays;
+            }
+
+            var dataPointSize = AppSettings.Load<string>("DataPointSize");
+            if (!string.IsNullOrEmpty(dataPointSize))
+            {
+                trackBarDataPointSize.Value = int.TryParse(dataPointSize, out int parsedDPSize) ? parsedDPSize : 10;
+                _graphPlotter.ChangeDataPointSize(parsedDPSize);
+            }
+
+            var timespanView = AppSettings.Load<string>("TimeSpanView");
+            if (!string.IsNullOrEmpty(timespanView))
+            {
+                cmbViewTimspan.Text = timespanView;
+            }
+
+            var showOrHideSettings = AppSettings.Load<string>("ShowOrHideSettings");
+
+            // If different than default, click the button
+            if (!string.IsNullOrEmpty(showOrHideSettings) && showOrHideSettings == ">" )
+            {
+                ToggleSettingsBox();
+            } 
+
         }
 
         private void LoadLastFetchTime()
@@ -380,6 +522,7 @@ namespace KasPriceChart
                 DateTime.TryParse(lastFetchTimeString, null, System.Globalization.DateTimeStyles.RoundtripKind, out _lastFetchTime);
             }
         }
+
         private void ShowTheChart()
         {
             if (tabControl1.SelectedIndex == 0)
@@ -391,6 +534,7 @@ namespace KasPriceChart
                 ShowTheHashrateChart(false, false);
             }
         }
+
         private void ShowThePriceChart(bool showPowerLawLines = false, bool logOrLinear = false)
         {
             // Filter data points for selected view
@@ -404,14 +548,14 @@ namespace KasPriceChart
             // Update the chart
             if (showPowerLawLines)
             {
-
-                _graphPlotter.UpdatePriceWithPowerLaw(dataPoints, richTextBoxLog, lblRValue, logOrLinear);
+                _graphPlotter.UpdatePriceWithPowerLaw(dataPoints, richTextBoxLog, lblRValue, logOrLinear, GetExtendLinesValue());
             } 
             else
             {
                 _graphPlotter.UpdatePriceChart(dataPoints, logOrLinear);
             }
         }
+
         private void ShowTheHashrateChart(bool showPowerLawLines = false, bool logOrLinear = false)
         {
             // Filter data points for selected view
@@ -425,13 +569,14 @@ namespace KasPriceChart
             // Update the chart
             if (showPowerLawLines)
             {
-                _graphPlotter.UpdateHashrateWithPowerLaw(dataPoints, richTextBoxLog, lblRValue, logOrLinear);
+                _graphPlotter.UpdateHashrateWithPowerLaw(dataPoints, richTextBoxLog, lblRValue, logOrLinear, GetExtendLinesValue());
             }
             else
             {
                 _graphPlotter.UpdateHashrateChart(dataPoints, logOrLinear);
             }
         }
+
         private void UpdateCurrentLabels(double latestPrice, double latestHashrate, DateTime latestTimestamp)
         {
             if (latestPrice > 0)
@@ -454,9 +599,52 @@ namespace KasPriceChart
             lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:dd-MM-yyyy hh:mm:ss tt}";
         }
 
+        private int GetExtendLinesValue()
+        {
+            int extendLines = 365;  // Default value
+
+            try
+            {
+                // Ensure that the TextBox value is not empty
+                string input = txtExtendLines.Text.Trim();
+
+                if (string.IsNullOrEmpty(input))
+                {
+                    MessageBox.Show("Please enter a value in the 'Extend Lines' field.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return extendLines;  // Return the default value
+                }
+
+                // Try to parse the value to an integer
+                if (!int.TryParse(input, out extendLines))
+                {
+                    MessageBox.Show("Invalid input. Please enter a valid integer value for 'Extend Lines'.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return extendLines;  // Return the default value
+                }
+
+                // Optional: You can add further validation (e.g., range checks)
+                if (extendLines < 0)
+                {
+                    MessageBox.Show("'Extend Lines' cannot be negative. Please enter a positive value.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return extendLines;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                // Catch any unexpected errors and show an error message
+                MessageBox.Show($"An error occurred while retrieving the value: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            return extendLines;
+        }
+
+
+
 
 
         #endregion
+
+
 
 
     }

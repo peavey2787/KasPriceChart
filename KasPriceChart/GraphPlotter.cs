@@ -5,6 +5,8 @@ using System.Windows.Forms;
 using System;
 using System.Linq;
 using System.Text;
+using System.Drawing.Drawing2D;
+using System.Threading;
 
 namespace KasPriceChart
 {
@@ -26,12 +28,18 @@ namespace KasPriceChart
         private double _xPanStartMax;
         private double _yPanStartMin;
         private double _yPanStartMax;
+
+        private int _dataPointSize;
         #endregion
 
 
         #region Initialization
         public GraphPlotter(Chart priceChart, Chart hashrateChart)
         {
+            // Defaults
+            _dataPointSize = 5;
+
+            // Set charts
             _priceChart = priceChart;
             _hashrateChart = hashrateChart;
 
@@ -109,7 +117,9 @@ namespace KasPriceChart
             chart.ChartAreas[0].AxisX.IntervalAutoMode = IntervalAutoMode.VariableCount;
 
             // Format y-axis labels to show values with 4 decimal places
-            chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";            
+            chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";
+
+            TurnPanningOn(chart);
         }
         #endregion
 
@@ -175,7 +185,7 @@ namespace KasPriceChart
             chart.Invalidate();
         }
 
-        private void UpdateChartWithPowerLawCore(Chart chart, List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear, Color lineColor)
+        private void UpdateChartWithPowerLawCore(Chart chart, List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear, Color lineColor, int extendLines)
         {
             chart.Series.Clear();
             richTextBoxLog.Clear();
@@ -244,13 +254,20 @@ namespace KasPriceChart
             richTextBoxLog.AppendText($"Regression Constants:\nExponent: {exponent}\nFair Price Constant: {fairPriceConstant}\n\n");
 
             DateTime latestDate = dataPoints.Max(dp => dp.Timestamp);
-            DateTime endDate = latestDate.AddYears(2);
+            DateTime endDate = latestDate.AddDays(extendLines);
 
             var (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices) = DataManager.PrepareChartData(genesisDate, dataPoints, exponent, fairPriceConstant * Math.Pow(10, -0.25), fairPriceConstant * Math.Pow(10, 0.25), fairPriceConstant, endDate);
 
             double yMin = Math.Min(supportPrices.Min(), Math.Min(resistancePrices.Min(), fairPrices.Min()));
             double yMax = Math.Max(supportPrices.Max(), Math.Max(resistancePrices.Max(), fairPrices.Max()));
 
+            chart.ChartAreas[0].AxisY.Minimum = yMin;
+            chart.ChartAreas[0].AxisY.Maximum = yMax;
+
+            // Ensure the yMin is not less than 0
+            yMin = Math.Max(yMin, 0.01);
+
+            // Set the y-axis range to prevent excessive zooming out
             chart.ChartAreas[0].AxisY.Minimum = yMin;
             chart.ChartAreas[0].AxisY.Maximum = yMax;
 
@@ -299,13 +316,44 @@ namespace KasPriceChart
             UpdateChartCore(_hashrateChart, dataPoints, logOrLinear, "Hashrate", _hashrateLineColor);
         }
 
-        public void UpdateHashrateWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear)
+        public void UpdateHashrateWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear, int extendLines)
         {
-            UpdateChartWithPowerLawCore(_hashrateChart, dataPoints, richTextBoxLog, lblRValue, logOrLinear, _hashrateLineColor);
+            UpdateChartWithPowerLawCore(_hashrateChart, dataPoints, richTextBoxLog, lblRValue, logOrLinear, _hashrateLineColor, extendLines);
         }
-        public void UpdatePriceWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear)
+
+        public void UpdatePriceWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear, int extendLines)
         {
-            UpdateChartWithPowerLawCore(_priceChart, dataPoints, richTextBoxLog, lblRValue, logOrLinear, _priceLineColor);
+            UpdateChartWithPowerLawCore(_priceChart, dataPoints, richTextBoxLog, lblRValue, logOrLinear, _priceLineColor, extendLines);
+        }
+
+        public void ResetZoom(bool priceChart = true)
+        {
+            if(priceChart)
+            {
+                ResetZoom(_priceChart);
+            }
+            else
+            {
+                ResetZoom(_hashrateChart);
+            }
+        }
+
+        public void ZoomToFit(bool priceChart = true)
+        {
+            if (priceChart)
+            {
+                ZoomToFitAllDataPoints(_priceChart);
+            }
+            else
+            {
+                ZoomToFitAllDataPoints(_hashrateChart);
+            }
+        }
+
+        public void ChangeDataPointSize(int newSize)
+        {
+            _dataPointSize = newSize;
+            ChangeDataPointSizeInChart(_priceChart, _dataPointSize);
         }
         #endregion
 
@@ -365,16 +413,17 @@ namespace KasPriceChart
             catch (Exception ex)
             {
                 // Log or handle exception as needed
+                Thread.Sleep(100);
             }
         }
 
         private void Chart_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            var chart = (Chart)sender;
+
+            if (e.Button == MouseButtons.Right)
             {
-                _isPanning = true;
                 _panStartPoint = e.Location;
-                var chart = (Chart)sender;
                 var xAxis = chart.ChartAreas[0].AxisX;
                 var yAxis = chart.ChartAreas[0].AxisY;
                 _xPanStartMin = xAxis.ScaleView.ViewMinimum;
@@ -385,11 +434,25 @@ namespace KasPriceChart
             }
         }
 
+        private void Chart_MouseUp(object sender, MouseEventArgs e)
+        {
+            var chart = (Chart)sender;
+
+            if (e.Button == MouseButtons.Left)
+            {
+                chart.Cursor = Cursors.Default;
+            }
+            else if (e.Button == MouseButtons.Right)
+            {                
+                chart.Cursor = Cursors.Default;                               
+            }
+        }
+
         private void Chart_MouseMove(object sender, MouseEventArgs e)
         {
-            if (_isPanning)
+            var chart = (Chart)sender;
+            if (e.Button == MouseButtons.Right)
             {
-                var chart = (Chart)sender;
                 var xAxis = chart.ChartAreas[0].AxisX;
                 var yAxis = chart.ChartAreas[0].AxisY;
 
@@ -400,23 +463,22 @@ namespace KasPriceChart
                     double newXPosition = _xPanStartMin - deltaX;
                     double newYPosition = _yPanStartMin - deltaY;
 
+                    // Ensure the new position values do not exceed bounds
+                    if (newXPosition < xAxis.Minimum) newXPosition = xAxis.Minimum;
+                    if (newXPosition > xAxis.Maximum - xAxis.ScaleView.Size) newXPosition = xAxis.Maximum - xAxis.ScaleView.Size;
+
                     xAxis.ScaleView.Position = newXPosition;
                     yAxis.ScaleView.Position = newYPosition;
                 }
+                catch (OverflowException ex)
+                {
+                    Thread.Sleep(500);
+                    //MessageBox.Show($"Overflow error during panning: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
                 catch (Exception ex)
                 {
-                    // Log or handle exception as needed
+                    //MessageBox.Show($"An error occurred during panning: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-            }
-        }
-
-        private void Chart_MouseUp(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-            {
-                _isPanning = false;
-                var chart = (Chart)sender;
-                chart.Cursor = Cursors.Hand;
             }
         }
 
@@ -535,6 +597,21 @@ namespace KasPriceChart
 
             return report.ToString();
         }
+        
+        private void TurnPanningOn(Chart chart)
+        {
+            _isPanning = true;
+            chart.ChartAreas[0].CursorX.IsUserEnabled = true;
+            chart.ChartAreas[0].CursorX.IsUserSelectionEnabled = true;
+            chart.ChartAreas[0].CursorY.IsUserEnabled = true;
+            chart.ChartAreas[0].CursorY.IsUserSelectionEnabled = true;
+
+            // Disable snapping to grid
+            chart.ChartAreas[0].CursorX.Interval = 0;
+            chart.ChartAreas[0].CursorX.IntervalOffset = 0;
+            chart.ChartAreas[0].CursorY.Interval = 0;
+            chart.ChartAreas[0].CursorY.IntervalOffset = 0;
+        }
 
         private void ResetZoom(Chart chart)
         {
@@ -555,7 +632,7 @@ namespace KasPriceChart
                     ChartType = SeriesChartType.Line,
                     Color = color,
                     MarkerStyle = MarkerStyle.Circle,
-                    MarkerSize = 10,
+                    MarkerSize = _dataPointSize,
                     ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
                     IsXValueIndexed = false
                 };
@@ -571,6 +648,86 @@ namespace KasPriceChart
                 IsXValueIndexed = false
             };
         }
+
+        private void ZoomToFitAllDataPoints(Chart chart)
+        {
+            // Variables to hold the overall min and max values
+            double xMin = double.MaxValue, xMax = double.MinValue;
+            double yMin = double.MaxValue, yMax = double.MinValue;
+
+            // Loop through all series in the chart
+            foreach (var series in chart.Series)
+            {
+                // Ensure the series has data points
+                if (series.Points.Count > 0)
+                {
+                    foreach (var point in series.Points)
+                    {
+                        // Update the min and max values for X and Y
+                        xMin = Math.Min(xMin, point.XValue);
+                        xMax = Math.Max(xMax, point.XValue);
+
+                        // Ensure no invalid data for Y values (avoid NaN, Infinity)
+                        double yValue = point.YValues.Min();
+                        if (!double.IsNaN(yValue) && !double.IsInfinity(yValue))
+                        {
+                            yMin = Math.Min(yMin, yValue);
+                            yMax = Math.Max(yMax, yValue);
+                        }
+                    }
+                }
+            }
+
+            // Ensure we found valid data points
+            if (xMin < double.MaxValue && xMax > double.MinValue && yMin < double.MaxValue && yMax > double.MinValue)
+            {
+                // Handle potential issues like range inversion (e.g., yMin > yMax)
+                if (xMin == xMax)
+                {
+                    xMin -= 1;  // Prevent the zoom from being zero or invalid
+                    xMax += 1;
+                }
+
+                if (yMin == yMax)
+                {
+                    yMin -= 1;  // Prevent the zoom from being zero or invalid
+                    yMax += 1;
+                }
+
+                // Ensure the ranges are within reasonable bounds to avoid extreme zooming
+                const double maxRange = 1e6;  // You can adjust this to suit your data
+                xMin = Math.Max(xMin, 0);  // Ensure xMin is non-negative
+                xMax = Math.Min(xMax, maxRange);
+                yMin = Math.Max(yMin, 0);  // Ensure yMin is non-negative
+                yMax = Math.Min(yMax, maxRange);
+
+                // Adjust the axis view to include all points
+                try
+                {
+                    var chartArea = chart.ChartAreas[0];
+                    chartArea.AxisX.ScaleView.Zoom(xMin, xMax);
+                    chartArea.AxisY.ScaleView.Zoom(yMin, yMax);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error while adjusting zoom: {ex.Message}", "Zoom Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("No data points found to zoom to fit.", "Zoom Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void ChangeDataPointSizeInChart(Chart chart, int newSize)
+        {
+            // Loop through all series and set the data point size
+            foreach (var series in chart.Series)
+            {
+                series.MarkerSize = newSize;
+            }
+        }
+
         #endregion
 
     }

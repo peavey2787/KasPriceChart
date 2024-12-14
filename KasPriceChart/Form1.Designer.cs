@@ -58,12 +58,19 @@
             this.tabPageHashrate = new System.Windows.Forms.TabPage();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.cmbViewTimspan = new System.Windows.Forms.ComboBox();
-            this.lblView = new System.Windows.Forms.Label();
             this.chkPowerLawLines = new System.Windows.Forms.CheckBox();
             this.richTextBoxLog = new System.Windows.Forms.RichTextBox();
             this.lblRValue = new System.Windows.Forms.Label();
             this.btnShowMore = new System.Windows.Forms.Button();
             this.chkLogLinear = new System.Windows.Forms.CheckBox();
+            this.groupBoxSettings = new System.Windows.Forms.GroupBox();
+            this.btnResetZoom = new System.Windows.Forms.Button();
+            this.btnZoomToFit = new System.Windows.Forms.Button();
+            this.lblExtendLines = new System.Windows.Forms.Label();
+            this.txtExtendLines = new System.Windows.Forms.TextBox();
+            this.btnShowSettingsBox = new System.Windows.Forms.Button();
+            this.trackBarDataPointSize = new System.Windows.Forms.TrackBar();
+            this.lblDataPointSize = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -71,6 +78,8 @@
             this.tabControl1.SuspendLayout();
             this.tabPagePrice.SuspendLayout();
             this.tabPageHashrate.SuspendLayout();
+            this.groupBoxSettings.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarDataPointSize)).BeginInit();
             this.SuspendLayout();
             // 
             // chart1
@@ -173,10 +182,6 @@
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.chkLogLinear);
-            this.groupBox1.Controls.Add(this.chkPowerLawLines);
-            this.groupBox1.Controls.Add(this.lblView);
-            this.groupBox1.Controls.Add(this.cmbViewTimspan);
             this.groupBox1.Controls.Add(this.chkAutoStart);
             this.groupBox1.Controls.Add(this.groupBox2);
             this.groupBox1.Controls.Add(this.chkUseOnlyUploadedData);
@@ -292,6 +297,8 @@
             // 
             // tabPagePrice
             // 
+            this.tabPagePrice.Controls.Add(this.btnShowSettingsBox);
+            this.tabPagePrice.Controls.Add(this.groupBoxSettings);
             this.tabPagePrice.Controls.Add(this.btnShowMore);
             this.tabPagePrice.Controls.Add(this.lblRValue);
             this.tabPagePrice.Controls.Add(this.richTextBoxLog);
@@ -317,6 +324,8 @@
             // 
             // cmbViewTimspan
             // 
+            this.cmbViewTimspan.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
+            this.cmbViewTimspan.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(112)))), ((int)(((byte)(199)))), ((int)(((byte)(186)))));
             this.cmbViewTimspan.FormattingEnabled = true;
             this.cmbViewTimspan.Items.AddRange(new object[] {
             "All Data",
@@ -331,31 +340,22 @@
             "2 Weeks",
             "1 Month",
             "1 Year"});
-            this.cmbViewTimspan.Location = new System.Drawing.Point(570, 43);
+            this.cmbViewTimspan.Location = new System.Drawing.Point(205, 12);
             this.cmbViewTimspan.Name = "cmbViewTimspan";
-            this.cmbViewTimspan.Size = new System.Drawing.Size(113, 21);
+            this.cmbViewTimspan.Size = new System.Drawing.Size(99, 21);
             this.cmbViewTimspan.TabIndex = 14;
             this.cmbViewTimspan.Text = "All Data";
             this.cmbViewTimspan.SelectedIndexChanged += new System.EventHandler(this.cmbViewTimspan_SelectedIndexChanged);
             this.cmbViewTimspan.TextUpdate += new System.EventHandler(this.cmbViewTimspan_TextUpdate);
             // 
-            // lblView
-            // 
-            this.lblView.AutoSize = true;
-            this.lblView.Location = new System.Drawing.Point(531, 46);
-            this.lblView.Name = "lblView";
-            this.lblView.Size = new System.Drawing.Size(33, 13);
-            this.lblView.TabIndex = 15;
-            this.lblView.Text = "View:";
-            // 
             // chkPowerLawLines
             // 
             this.chkPowerLawLines.AutoSize = true;
-            this.chkPowerLawLines.Location = new System.Drawing.Point(570, 73);
+            this.chkPowerLawLines.Location = new System.Drawing.Point(87, 44);
             this.chkPowerLawLines.Name = "chkPowerLawLines";
-            this.chkPowerLawLines.Size = new System.Drawing.Size(113, 17);
+            this.chkPowerLawLines.Size = new System.Drawing.Size(107, 17);
             this.chkPowerLawLines.TabIndex = 16;
-            this.chkPowerLawLines.Text = "Power Law Lines?";
+            this.chkPowerLawLines.Text = "Power Law Lines";
             this.chkPowerLawLines.UseVisualStyleBackColor = true;
             this.chkPowerLawLines.CheckedChanged += new System.EventHandler(this.chkPowerLawLines_CheckedChanged);
             // 
@@ -402,13 +402,100 @@
             // chkLogLinear
             // 
             this.chkLogLinear.AutoSize = true;
-            this.chkLogLinear.Location = new System.Drawing.Point(445, 43);
+            this.chkLogLinear.Location = new System.Drawing.Point(87, 15);
             this.chkLogLinear.Name = "chkLogLinear";
             this.chkLogLinear.Size = new System.Drawing.Size(78, 17);
             this.chkLogLinear.TabIndex = 17;
             this.chkLogLinear.Text = "Log/Linear";
             this.chkLogLinear.UseVisualStyleBackColor = true;
             this.chkLogLinear.CheckedChanged += new System.EventHandler(this.chkLogLinear_CheckedChanged);
+            // 
+            // groupBoxSettings
+            // 
+            this.groupBoxSettings.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
+            this.groupBoxSettings.Controls.Add(this.lblDataPointSize);
+            this.groupBoxSettings.Controls.Add(this.trackBarDataPointSize);
+            this.groupBoxSettings.Controls.Add(this.txtExtendLines);
+            this.groupBoxSettings.Controls.Add(this.btnZoomToFit);
+            this.groupBoxSettings.Controls.Add(this.chkLogLinear);
+            this.groupBoxSettings.Controls.Add(this.btnResetZoom);
+            this.groupBoxSettings.Controls.Add(this.chkPowerLawLines);
+            this.groupBoxSettings.Controls.Add(this.cmbViewTimspan);
+            this.groupBoxSettings.Controls.Add(this.lblExtendLines);
+            this.groupBoxSettings.Location = new System.Drawing.Point(39, 0);
+            this.groupBoxSettings.Name = "groupBoxSettings";
+            this.groupBoxSettings.Size = new System.Drawing.Size(356, 151);
+            this.groupBoxSettings.TabIndex = 4;
+            this.groupBoxSettings.TabStop = false;
+            // 
+            // btnResetZoom
+            // 
+            this.btnResetZoom.ForeColor = System.Drawing.Color.Black;
+            this.btnResetZoom.Location = new System.Drawing.Point(5, 11);
+            this.btnResetZoom.Name = "btnResetZoom";
+            this.btnResetZoom.Size = new System.Drawing.Size(75, 21);
+            this.btnResetZoom.TabIndex = 18;
+            this.btnResetZoom.Text = "Reset Zoom";
+            this.btnResetZoom.UseVisualStyleBackColor = true;
+            this.btnResetZoom.Click += new System.EventHandler(this.btnResetZoom_Click);
+            // 
+            // btnZoomToFit
+            // 
+            this.btnZoomToFit.ForeColor = System.Drawing.Color.Black;
+            this.btnZoomToFit.Location = new System.Drawing.Point(6, 41);
+            this.btnZoomToFit.Name = "btnZoomToFit";
+            this.btnZoomToFit.Size = new System.Drawing.Size(75, 21);
+            this.btnZoomToFit.TabIndex = 19;
+            this.btnZoomToFit.Text = "Zoom to Fit";
+            this.btnZoomToFit.UseVisualStyleBackColor = true;
+            this.btnZoomToFit.Click += new System.EventHandler(this.btnZoomToFit_Click);
+            // 
+            // lblExtendLines
+            // 
+            this.lblExtendLines.AutoSize = true;
+            this.lblExtendLines.Location = new System.Drawing.Point(202, 45);
+            this.lblExtendLines.Name = "lblExtendLines";
+            this.lblExtendLines.Size = new System.Drawing.Size(102, 13);
+            this.lblExtendLines.TabIndex = 15;
+            this.lblExtendLines.Text = "Extend Lines (days):";
+            // 
+            // txtExtendLines
+            // 
+            this.txtExtendLines.Location = new System.Drawing.Point(310, 42);
+            this.txtExtendLines.Name = "txtExtendLines";
+            this.txtExtendLines.Size = new System.Drawing.Size(41, 20);
+            this.txtExtendLines.TabIndex = 20;
+            this.txtExtendLines.Text = "365";
+            this.txtExtendLines.TextChanged += new System.EventHandler(this.txtExtendLines_TextChanged);
+            // 
+            // btnShowSettingsBox
+            // 
+            this.btnShowSettingsBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnShowSettingsBox.ForeColor = System.Drawing.Color.Black;
+            this.btnShowSettingsBox.Location = new System.Drawing.Point(5, 7);
+            this.btnShowSettingsBox.Name = "btnShowSettingsBox";
+            this.btnShowSettingsBox.Size = new System.Drawing.Size(31, 25);
+            this.btnShowSettingsBox.TabIndex = 5;
+            this.btnShowSettingsBox.Text = "<";
+            this.btnShowSettingsBox.UseVisualStyleBackColor = true;
+            this.btnShowSettingsBox.Click += new System.EventHandler(this.btnShowSettingsBox_Click);
+            // 
+            // trackBarDataPointSize
+            // 
+            this.trackBarDataPointSize.Location = new System.Drawing.Point(6, 90);
+            this.trackBarDataPointSize.Name = "trackBarDataPointSize";
+            this.trackBarDataPointSize.Size = new System.Drawing.Size(95, 45);
+            this.trackBarDataPointSize.TabIndex = 21;
+            this.trackBarDataPointSize.ValueChanged += new System.EventHandler(this.trackBarDataPointSize_ValueChanged);
+            // 
+            // lblDataPointSize
+            // 
+            this.lblDataPointSize.AutoSize = true;
+            this.lblDataPointSize.Location = new System.Drawing.Point(6, 74);
+            this.lblDataPointSize.Name = "lblDataPointSize";
+            this.lblDataPointSize.Size = new System.Drawing.Size(80, 13);
+            this.lblDataPointSize.TabIndex = 22;
+            this.lblDataPointSize.Text = "Data Point Size";
             // 
             // MainForm
             // 
@@ -433,6 +520,9 @@
             this.tabPagePrice.ResumeLayout(false);
             this.tabPagePrice.PerformLayout();
             this.tabPageHashrate.ResumeLayout(false);
+            this.groupBoxSettings.ResumeLayout(false);
+            this.groupBoxSettings.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarDataPointSize)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -461,12 +551,19 @@
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.CheckBox chkAutoStart;
         private System.Windows.Forms.ComboBox cmbViewTimspan;
-        private System.Windows.Forms.Label lblView;
         private System.Windows.Forms.CheckBox chkPowerLawLines;
         private System.Windows.Forms.RichTextBox richTextBoxLog;
         private System.Windows.Forms.Label lblRValue;
         private System.Windows.Forms.Button btnShowMore;
         private System.Windows.Forms.CheckBox chkLogLinear;
+        private System.Windows.Forms.GroupBox groupBoxSettings;
+        private System.Windows.Forms.Button btnResetZoom;
+        private System.Windows.Forms.Button btnZoomToFit;
+        private System.Windows.Forms.TextBox txtExtendLines;
+        private System.Windows.Forms.Label lblExtendLines;
+        private System.Windows.Forms.Button btnShowSettingsBox;
+        private System.Windows.Forms.Label lblDataPointSize;
+        private System.Windows.Forms.TrackBar trackBarDataPointSize;
     }
 }
 

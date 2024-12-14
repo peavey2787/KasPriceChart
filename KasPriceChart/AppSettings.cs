@@ -12,16 +12,12 @@ namespace KasPriceChart
     public static class AppSettings
     {
         private static readonly string SettingsFilePath = "AppSettings.json";
-        private static readonly string BackupFilePath = "BackupAppSettings.json";
         private static readonly object FileLock = new object();
 
         public static void Save<T>(string key, T value)
         {
             lock (FileLock)
             {
-                // Create a backup before making changes
-                CreateBackup();
-
                 var settings = LoadSettings();
                 settings[key] = JsonConvert.SerializeObject(value);
                 SaveSettings(settings);
@@ -93,16 +89,6 @@ namespace KasPriceChart
             }
         }
 
-        private static void CreateBackup()
-        {
-            lock (FileLock)
-            {
-                if (File.Exists(SettingsFilePath))
-                {
-                    File.Copy(SettingsFilePath, BackupFilePath, true);
-                }
-            }
-        }
 
         private static Dictionary<string, string> LoadSettings()
         {
