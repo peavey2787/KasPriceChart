@@ -281,6 +281,7 @@ namespace KasPriceChart
                 btnShowMore.Visible = chkPowerLawLines.Checked;
                 lblRValue.Visible = chkPowerLawLines.Checked;
                 ShowTheChart();
+                _graphPlotter.ResetZoom();
             } 
             else
             {
@@ -288,6 +289,7 @@ namespace KasPriceChart
                 btnShowMore.Visible = chkPowerLawLines.Checked;
                 lblRValue.Visible = chkPowerLawLines.Checked;
                 ShowTheChart();
+                _graphPlotter.ResetZoom();
             }
         }
 
@@ -297,6 +299,7 @@ namespace KasPriceChart
             {
                 SaveControlStates();
                 ShowTheChart();
+                _graphPlotter.ResetZoom();
             }
         }
         #endregion
