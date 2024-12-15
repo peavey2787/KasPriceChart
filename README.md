@@ -1,6 +1,6 @@
 # KasPriceChart
 
-![image](https://github.com/user-attachments/assets/69091a53-0b05-4c07-9b83-794fad50f03f)
+![image](https://github.com/user-attachments/assets/587c1721-1250-41e9-9ce4-d89e47729c7b)
 
 
 <div style="color: red; font-weight: bold;">
@@ -20,4 +20,9 @@ Right mouse button will pan the chart.
 
 Click and drag the left mouse button to zoom in on a specific area.
 
-Change the drop down menu to change the timespan of data shown in the chart. The number shown in the drop down menu's text box can actually be edited to further customize the data shown.
+Middle mouse wheel zooms in/out.
+
+Change the drop down menu to change the timespan of data shown in the chart. The number shown in the drop down menu's text box can actually be edited to further customize the data shown and the data exported will depend on this setting.
+
+
+
