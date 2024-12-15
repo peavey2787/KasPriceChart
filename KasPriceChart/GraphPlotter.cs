@@ -15,32 +15,6 @@ namespace KasPriceChart
     public class GraphPlotter
     {
         #region Variables
-        private static readonly (double Range, double Interval)[] ZoomLevels = new[]
-        {
-            (0.0052, 0.0001625),      // 5 minutes, with labels every 11.25 seconds
-            (0.0104, 0.000325),       // 15 minutes, with labels every 22.5 seconds
-            (0.0156, 0.00065),        // 30 minutes, with labels every 45 seconds
-            (0.0208, 0.0013),         // 45 minutes, with labels every 1.875 minutes
-            (0.0417, 0.0026),         // 1 hour, with labels every 3.75 minutes
-            (0.0833, 0.0052),         // 2 hours, with labels every 7.5 minutes
-            (0.167, 0.0104),          // 4 hours, with labels every 15 minutes
-            (0.25, 0.0208),           // 6 hours, with labels every 25 minutes
-            (0.5, 0.03125),           // 12 hours, with labels every 45 minutes
-            (1, 0.1),                 // 1 day, with labels every 1.5 hours
-            (3, 0.5),                 // 3 days, with labels every 3 hours
-            (7, 1),                   // 1 week, with labels every day
-            (14, 1),                  // 2 weeks, with labels every day
-            (30.4, 7),                // 1 month, with labels every week
-            (91.25, 14),              // 3 months, with labels every 2 weeks
-            (182.5, 14),              // 6 months, with labels every month
-            (365, 30),                // 1 year, with labels every month
-            (365 * 2, 30),            // 2 years, with labels every month
-        };
-
-
-
-        private double _initialZoomLevel;
-
         private Chart _priceChart;
         private Chart _hashrateChart;
         private Color _priceBackgroundColor;
@@ -66,7 +40,6 @@ namespace KasPriceChart
         {
             // Defaults
             _dataPointSize = 5;
-            _initialZoomLevel = ZoomLevels[0].Interval;
 
             // Set charts
             _priceChart = priceChart;
@@ -217,10 +190,9 @@ namespace KasPriceChart
         }
 
 
-        private void UpdateChartWithPowerLawCore(Chart chart, List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear, Color lineColor, int extendLines)
+        private void UpdateChartWithPowerLawCore(Chart chart, List<DataPoint> dataPoints, bool logOrLinear, Color lineColor, int extendLines, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices)
         {
             chart.Series.Clear();
-            richTextBoxLog.Clear();
 
             if (dataPoints == null || dataPoints.Count == 0)
             {
@@ -250,51 +222,11 @@ namespace KasPriceChart
 
             chart.Series.Add(seriesData);
 
-            var genesisDate = new DateTime(2021, 11, 7);
-
-            // Perform log-log regression once to get the constants
-            var (exponent, fairPriceConstant, rSquared, sumX, sumY, sumXY, sumX2, sumY2) = DataManager.GetRegressionConstants(dataPoints, genesisDate, richTextBoxLog);
-
-            // Extract significant digits and exponent part
-            string significantDigits = "N/A";
-            string formattedFairPriceConstant = "N/A";
-            try
-            {
-                string fairPriceString = fairPriceConstant.ToString("0.000E+0");
-                int exponentIndex = fairPriceString.IndexOf('E');
-                if (exponentIndex > -1)
-                {
-                    significantDigits = fairPriceString.Substring(0, exponentIndex);
-                    string exponentPart = fairPriceString.Substring(exponentIndex);
-                    exponentPart = exponentPart.Replace("E-0", "E-").Replace("E+0", "E+");
-                    formattedFairPriceConstant = $"{significantDigits}...{exponentPart}";
-                }
-            }
-            catch (Exception ex)
-            {
-                richTextBoxLog.AppendText($"Error extracting significant digits and exponent: {ex.Message}\n");
-            }
-
-            lblRValue.Text = string.Format(
-                "R² = {0:F4}{1}Exponent: {2:F4}{1}Fair Price Constant: {3}",
-                rSquared,
-                Environment.NewLine,
-                exponent,
-                formattedFairPriceConstant
-            );
-
-            richTextBoxLog.AppendText($"Regression Constants:\nExponent: {exponent}\nFair Price Constant: {fairPriceConstant}\n\n");
-
             DateTime latestDate = dataPoints.Max(dp => dp.Timestamp);
             DateTime endDate = latestDate.AddDays(extendLines);
 
-            var (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices) = DataManager.PrepareChartData(genesisDate, dataPoints, exponent, fairPriceConstant * Math.Pow(10, -0.25), fairPriceConstant * Math.Pow(10, 0.25), fairPriceConstant, endDate);
-
-            double yMin = Math.Min(supportPrices.Min(), Math.Min(resistancePrices.Min(), fairPrices.Min()));
-            double yMax = Math.Max(supportPrices.Max(), Math.Max(resistancePrices.Max(), fairPrices.Max()));
-
-            chart.ChartAreas[0].AxisY.Minimum = yMin;
-            chart.ChartAreas[0].AxisY.Maximum = yMax;
+            double yMin = Math.Min(supportPrices.Values.Min(), Math.Min(resistancePrices.Values.Min(), fairPrices.Values.Min()));
+            double yMax = Math.Max(supportPrices.Values.Max(), Math.Max(resistancePrices.Values.Max(), fairPrices.Values.Max()));
 
             // Ensure the yMin is not less than 0
             yMin = Math.Max(yMin, 0.001);
@@ -317,11 +249,24 @@ namespace KasPriceChart
             var resistanceSeries = CreateSeries("Resistance", Color.Red, true);
             var fairPriceSeries = CreateSeries("Fair", Color.Blue, true);
 
-            for (int i = 0; i < dates.Count; i++)
+            for (int i = 0; i < fairPrices.Values.Count; i++)
             {
-                supportSeries.Points.AddXY(dates[i], supportPrices[i]);
-                resistanceSeries.Points.AddXY(dates[i], resistancePrices[i]);
-                fairPriceSeries.Points.AddXY(dates[i], fairPrices[i]);
+                var timestamp = fairPrices.ElementAt(i).Key; // Get timestamp
+
+                if (supportPrices.TryGetValue(timestamp, out double supportPrice))
+                {
+                    supportSeries.Points.AddXY(timestamp, supportPrice);
+                }
+
+                if (resistancePrices.TryGetValue(timestamp, out double resistancePrice))
+                {
+                    resistanceSeries.Points.AddXY(timestamp, resistancePrice);
+                }
+
+                if (fairPrices.TryGetValue(timestamp, out double fairPrice))
+                {
+                    fairPriceSeries.Points.AddXY(timestamp, fairPrice);
+                }
             }
 
             chart.Series.Add(supportSeries);
@@ -329,10 +274,8 @@ namespace KasPriceChart
             chart.Series.Add(fairPriceSeries);
 
             chart.Invalidate();
-
-            string report = GenerateReport(dataPoints, genesisDate, exponent, fairPriceConstant, rSquared, logDeltaGB, logPrices, sumX, sumY, sumXY, sumX2, sumY2);
-            richTextBoxLog.Text = report;
         }
+        
         #endregion
 
 
@@ -347,14 +290,14 @@ namespace KasPriceChart
             UpdateChartCore(_hashrateChart, dataPoints, logOrLinear, "Hashrate", _hashrateLineColor);
         }
 
-        public void UpdateHashrateWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear, int extendLines)
+        public void UpdateHashrateWithPowerLaw(List<DataPoint> dataPoints, bool logOrLinear, int extendLines, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices)
         {
-            UpdateChartWithPowerLawCore(_hashrateChart, dataPoints, richTextBoxLog, lblRValue, logOrLinear, _hashrateLineColor, extendLines);
+            //UpdateChartWithPowerLawCore(_hashrateChart, dataPoints, logOrLinear, _hashrateLineColor, extendLines, supportPrices, resistancePrices, fairPrices);
         }
 
-        public void UpdatePriceWithPowerLaw(List<DataPoint> dataPoints, RichTextBox richTextBoxLog, Label lblRValue, bool logOrLinear, int extendLines)
+        public void UpdatePriceWithPowerLaw(List<DataPoint> dataPoints, bool logOrLinear, int extendLines, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices)
         {
-            UpdateChartWithPowerLawCore(_priceChart, dataPoints, richTextBoxLog, lblRValue, logOrLinear, _priceLineColor, extendLines);
+            UpdateChartWithPowerLawCore(_priceChart, dataPoints, logOrLinear, _priceLineColor, extendLines, supportPrices, resistancePrices, fairPrices);
         }
 
         public void ResetZoom(bool priceChart = true)
@@ -532,59 +475,7 @@ namespace KasPriceChart
 
             return $"{hashrate:F3}";
         }
-
-        public static string GenerateReport(List<DataPoint> dataPoints, DateTime genesisDate, double exponent, double fairPriceConstant, double rSquared, List<double> logDeltaGB, List<double> logPrices, double sumX, double sumY, double sumXY, double sumX2, double sumY2)
-        {
-            var report = new StringBuilder();
-
-            // Preprocessing Steps
-            report.AppendLine("### Data Preprocessing");
-            report.AppendLine("- Data Source: CoinCodex for majority of historical data and real time data");
-            report.AppendLine($"- Timeframe: {genesisDate:yyyy-MM-dd} to {dataPoints.Max(dp => dp.Timestamp):yyyy-MM-dd}");
-            report.AppendLine("- Preprocessing Steps:");
-            report.AppendLine("  1. Filtered out data points with non-positive prices.");
-            report.AppendLine("  2. Calculated the difference in days from the genesis date (deltaGB).");
-            report.AppendLine("  3. Applied log transformation to deltaGB and prices.");
-
-            // Calculation Methodology
-            report.AppendLine("\n### Calculation Methodology");
-            report.AppendLine("- Log-Log Regression:");
-            report.AppendLine("  - Formula: log(y) = a * log(x) + b");
-            report.AppendLine("  - a (Exponent): Calculated as (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)");
-            report.AppendLine("  - b (Intercept): Calculated as (sumY - a * sumX) / n");
-            report.AppendLine("  - rSquared: Calculated to measure goodness of fit");
-            report.AppendLine("  - Fair Price Constant: exp(b)");
-            report.AppendLine("- Support and Resistance Lines:");
-            report.AppendLine("  - Support Price: fairPrice * 10^-0.25");
-            report.AppendLine("  - Resistance Price: fairPrice * 10^0.25");
-
-            // Regression Constants
-            report.AppendLine("\n### Regression Constants");
-            report.AppendLine($"- sumX: {sumX}");
-            report.AppendLine($"- sumY: {sumY}");
-            report.AppendLine($"- sumXY: {sumXY}");
-            report.AppendLine($"- sumX2: {sumX2}");
-            report.AppendLine($"- sumY2: {sumY2}");
-            report.AppendLine($"- Slope (Exponent): {exponent}");
-            report.AppendLine($"- Intercept: {Math.Exp(fairPriceConstant)}");
-            report.AppendLine($"- rSquared: {rSquared}");
-            report.AppendLine($"- Fair Price Constant: {fairPriceConstant}");
-
-            // Summary of Key Findings and Insights
-            report.AppendLine("\n### Summary of Key Findings and Insights");
-            report.AppendLine("Kaspa is the only other crypto asset besides Bitcoin to follow a power law. This indicates that Kaspa shares unique properties with Bitcoin, suggesting a fundamental value similar to that of Bitcoin. Kaspa follows Satoshi's vision by generalizing Nakamoto consensus, which allows for more scalable and efficient decentralized consensus mechanisms. This makes Kaspa a unique and innovative project in the crypto space already with several real world projects ready to use Kaspa once zk_opcode is released.");
-
-            // Full Dataset
-            report.AppendLine($"\n### Full Dataset with {dataPoints.Count} unique data points");
-            report.AppendLine("Timestamp,Price,Hashrate");
-            foreach (var point in dataPoints)
-            {
-                report.AppendLine($"{point.Timestamp:yyyy-MM-dd HH:mm:ss},{point.Price},{point.Hashrate}");
-            }
-
-            return report.ToString();
-        }
-
+        
         private void TurnPanningOn(Chart chart)
         {
             _isPanning = true;

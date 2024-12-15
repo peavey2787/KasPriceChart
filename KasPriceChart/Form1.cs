@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -102,11 +103,11 @@ namespace KasPriceChart
             if (_countdownTime <= 0)
             {
                 // Fetch data
-                if(await FetchData())
-                {
-                    // Reset countdown time to the interval
-                    _countdownTime = Int32.TryParse(txtInterval.Text, out int interval) ? interval * 60 : MIN_TIME_BETWEEN_API_CALLS;
-                }                
+                await FetchData();
+                
+                // Reset countdown time to the interval
+                _countdownTime = int.TryParse(txtInterval.Text, out int interval) ? interval * 60 : MIN_TIME_BETWEEN_API_CALLS;
+                              
             }
         }
         #endregion
@@ -441,6 +442,7 @@ namespace KasPriceChart
             _ogEndTime = latestDate;
             lblDataLoaded.Text = $"Data loaded from: {earliestDate}  through  {latestDate}";
         }
+
         private void ToggleSettingsBox()
         {
             if (btnShowSettingsBox.Text == "<")
@@ -456,7 +458,6 @@ namespace KasPriceChart
                 btnShowSettingsBox.Text = "<";
             }
         }
-
 
         private async Task<bool> FetchData()
         {
@@ -495,7 +496,6 @@ namespace KasPriceChart
             }
             return false;
         }
-
 
         private void SaveData()
         {
@@ -587,7 +587,7 @@ namespace KasPriceChart
             }
         }
 
-        private void ShowThePriceChart(bool showPowerLawLines = false, bool logOrLinear = false)
+        private async void ShowThePriceChart(bool showPowerLawLines = false, bool logOrLinear = false)
         {
             DateTime startDate;
             DateTime endDate;
@@ -609,7 +609,10 @@ namespace KasPriceChart
             {
                 endDate = dateTimePickerEnd.Value;
             }
-            
+
+            // Update the time with the current time to get real-time data
+            endDate = endDate.Date + DateTime.Now.TimeOfDay;
+
             // Filter data points for selected view
             string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
             List<DataPoint> dataPoints = DataManager.FilterDataPointsForView(_dataManager.GetData(), selectedTimespan);
@@ -622,7 +625,14 @@ namespace KasPriceChart
             // Update the chart
             if (showPowerLawLines)
             {
-                _graphPlotter.UpdatePriceWithPowerLaw(dataPoints, richTextBoxLog, lblRValue, logOrLinear, GetExtendLinesValue());
+                var genesisDate = new DateTime(2021, 11, 7);
+                var powerLawData = await Task.Run(()=> DataManager.PreparePowerLawData(dataPoints, genesisDate, GetExtendLinesValue()));
+                _graphPlotter.UpdatePriceWithPowerLaw(dataPoints, logOrLinear, GetExtendLinesValue(), powerLawData.supportPrices, powerLawData.resistancePrices, powerLawData.fairPrices);
+
+                richTextBoxLog.Clear();
+                richTextBoxLog.Text = powerLawData.logText;
+
+                lblRValue.Text = powerLawData.rValue;
             }
             else
             {
@@ -643,7 +653,7 @@ namespace KasPriceChart
             // Update the chart
             if (showPowerLawLines)
             {
-                _graphPlotter.UpdateHashrateWithPowerLaw(dataPoints, richTextBoxLog, lblRValue, logOrLinear, GetExtendLinesValue());
+                //_graphPlotter.UpdateHashrateWithPowerLaw(dataPoints, logOrLinear, GetExtendLinesValue());
             }
             else
             {

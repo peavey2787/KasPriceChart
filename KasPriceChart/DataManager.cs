@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 
 namespace KasPriceChart
@@ -209,7 +210,6 @@ namespace KasPriceChart
             return filteredDataPoints;
         }
 
-
         public static (double latestPrice, double latestHashrate, DateTime latestTimestamp) GetLatestData(List<DataPoint> dataPoints)
         {
             double latestPrice = 0;
@@ -235,22 +235,19 @@ namespace KasPriceChart
             return (latestPrice, latestHashrate, latestTimestamp);
         }
 
-
-        public static (double exponent, double fairPriceConstant, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) GetRegressionConstants(List<DataPoint> dataPoints, DateTime genesisDate, RichTextBox richTextBoxLog)
+        public static (double exponent, double fairPriceConstant, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) GetRegressionConstants(List<DataPoint> dataPoints, DateTime genesisDate)
         {
             var deltaGB = new List<double>();
             var prices = new List<double>();
 
             if (dataPoints == null || dataPoints.Count == 0)
             {
-                richTextBoxLog.AppendText("Error: Data points list is empty or null.\n");
                 return (double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN);
             }
 
             var earliestDate = dataPoints.Min(dp => dp.Timestamp);
             if (genesisDate >= earliestDate)
             {
-                richTextBoxLog.AppendText($"Genesis date {genesisDate} is not earlier than the earliest data date {earliestDate}\n");
                 genesisDate = earliestDate.AddDays(-1); // Adjust genesisDate to be 1 day before the earliest data date
             }
 
@@ -259,21 +256,14 @@ namespace KasPriceChart
                 double delta = (point.Timestamp - genesisDate).TotalDays;
                 if (delta <= 0)
                 {
-                    richTextBoxLog.AppendText($"Invalid delta for date: {point.Timestamp}, delta: {delta}\n");
                     delta = 1; // Set to 1 day if delta is zero or negative
                 }
                 deltaGB.Add(delta);
                 prices.Add(point.Price);
-
-                if (point.Price <= 0)
-                {
-                    richTextBoxLog.AppendText($"Invalid Price: {point.Price} for {point.Timestamp}\n");
-                }
             }
 
             if (deltaGB.Count == 0 || prices.Count == 0)
             {
-                richTextBoxLog.AppendText("Empty deltaGB or prices array\n");
                 throw new InvalidOperationException("Empty deltaGB or prices array");
             }
 
@@ -281,45 +271,34 @@ namespace KasPriceChart
 
             var logDeltaGB = deltaGB.Select((x, index) =>
             {
-                if (x <= THRESHOLD)
-                {
-                    richTextBoxLog.AppendText($"Error: Non-positive delta (below threshold): {x} at index: {index}\n");
-                }
                 return Math.Log(x);
             }).ToList();
 
             var logPrices = prices.Select((x, index) =>
             {
-                if (x <= THRESHOLD)
-                {
-                    richTextBoxLog.AppendText($"Error: Non-positive price (below threshold): {x} at index: {index}\n");
-                }
                 return Math.Log(x);
             }).ToList();
 
             if (logDeltaGB.Count == 0 || logPrices.Count == 0)
             {
-                richTextBoxLog.AppendText("Log values are invalid, cannot proceed with regression\n");
                 throw new InvalidOperationException("Log values are invalid, cannot proceed with regression");
             }
 
-            var regression = LinearRegression(logDeltaGB, logPrices, richTextBoxLog);
+            var regression = LinearRegression(logDeltaGB, logPrices);
 
             if (double.IsNaN(regression.slope) || double.IsNaN(regression.intercept))
             {
-                richTextBoxLog.AppendText("Regression resulted in NaN values for slope or intercept\n");
                 throw new InvalidOperationException("Regression resulted in NaN values for slope or intercept");
             }
 
             return (exponent: regression.slope, fairPriceConstant: Math.Exp(regression.intercept), rSquared: regression.rSquared, sumX: regression.sumX, sumY: regression.sumY, sumXY: regression.sumXY, sumX2: regression.sumX2, sumY2: regression.sumY2);
         }
 
-        private static (double slope, double intercept, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) LinearRegression(List<double> x, List<double> y, RichTextBox richTextBoxLog)
+        private static (double slope, double intercept, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) LinearRegression(List<double> x, List<double> y)
         {
             int n = x.Count;
             if (n != y.Count)
             {
-                richTextBoxLog.AppendText("Arrays x and y must have the same length\n");
                 throw new ArgumentException("Arrays x and y must have the same length");
             }
 
@@ -332,25 +311,11 @@ namespace KasPriceChart
                 sumXY += x[i] * y[i];
                 sumX2 += x[i] * x[i];
                 sumY2 += y[i] * y[i];
-
-                if (double.IsNaN(x[i]) || double.IsNaN(y[i]))
-                {
-                    richTextBoxLog.AppendText($"Invalid data at index {i}: x={x[i]}, y={y[i]}\n");
-                }
             }
 
             double slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
             double intercept = (sumY - slope * sumX) / n;
             double rSquared = Math.Pow((n * sumXY - sumX * sumY) / Math.Sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)), 2);
-
-            richTextBoxLog.AppendText($"sumX: {sumX}\n");
-            richTextBoxLog.AppendText($"sumY: {sumY}\n");
-            richTextBoxLog.AppendText($"sumXY: {sumXY}\n");
-            richTextBoxLog.AppendText($"sumX2: {sumX2}\n");
-            richTextBoxLog.AppendText($"sumY2: {sumY2}\n");
-            richTextBoxLog.AppendText($"slope: {slope}\n");
-            richTextBoxLog.AppendText($"intercept: {intercept}\n");
-            richTextBoxLog.AppendText($"rSquared: {rSquared}\n");
 
             return (slope, intercept, rSquared, sumX, sumY, sumXY, sumX2, sumY2);
         }
@@ -365,7 +330,7 @@ namespace KasPriceChart
             return (supportPrice, resistancePrice, fairPrice);
         }
 
-        public static (List<DateTime> dates, List<double> prices, List<double> supportPrices, List<double> resistancePrices, List<double> fairPrices, List<double> logDeltaGB, List<double> logPrices) PrepareChartData(DateTime genesisDate, List<DataPoint> dataPoints, double exponent, double supportPriceConstant, double resistancePriceConstant, double fairPriceConstant, DateTime endDate)
+        public static (List<DateTime> dates, List<double> prices, List<double> supportPrices, List<double> resistancePrices, List<double> fairPrices, List<double> logDeltaGB, List<double> logPrices) PreparePowerLawUpperAndLowerBands(DateTime genesisDate, List<DataPoint> dataPoints, double exponent, double supportPriceConstant, double resistancePriceConstant, double fairPriceConstant, DateTime endDate)
         {
             var dates = new List<DateTime>();
             var prices = new List<double>();
@@ -408,6 +373,119 @@ namespace KasPriceChart
 
             return (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices);
         }
+
+        public static (string logText, string rValue, Dictionary<DateTime, double> prices, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices) PreparePowerLawData(List<DataPoint> dataPoints, DateTime genesisDate, int extendLines)
+        {
+            string logText = "";
+            string rValue = "";
+
+            if (dataPoints == null || dataPoints.Count == 0)
+            {
+                return (logText, rValue, null, null, null, null);
+            }
+
+            var (exponent, fairPriceConstant, rSquared, sumX, sumY, sumXY, sumX2, sumY2) = DataManager.GetRegressionConstants(dataPoints, genesisDate);
+
+            // Handle significant digits
+            string significantDigits = "N/A";
+            string formattedFairPriceConstant = "N/A";
+            try
+            {
+                string fairPriceString = fairPriceConstant.ToString("0.000E+0");
+                int exponentIndex = fairPriceString.IndexOf('E');
+                if (exponentIndex > -1)
+                {
+                    significantDigits = fairPriceString.Substring(0, exponentIndex);
+                    string exponentPart = fairPriceString.Substring(exponentIndex);
+                    exponentPart = exponentPart.Replace("E-0", "E-").Replace("E+0", "E+");
+                    formattedFairPriceConstant = $"{significantDigits}...{exponentPart}";
+                }
+            }
+            catch (Exception ex)
+            {
+                logText += $"Error extracting significant digits and exponent: {ex.Message}\n";
+            }
+
+            rValue = string.Format(
+                "R² = {0:F4}{1}Exponent: {2:F4}{1}Fair Price Constant: {3}",
+                rSquared,
+                Environment.NewLine,
+                exponent,
+                formattedFairPriceConstant
+            );
+
+            logText += $"Regression Constants:\nExponent: {exponent}\nFair Price Constant: {fairPriceConstant}\n\n";
+
+            DateTime latestDate = dataPoints.Max(dp => dp.Timestamp);
+            DateTime endDate = latestDate.AddDays(extendLines);
+
+            var (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices) = DataManager.PreparePowerLawUpperAndLowerBands(
+                genesisDate, dataPoints, exponent, fairPriceConstant * Math.Pow(10, -0.25), fairPriceConstant * Math.Pow(10, 0.25), fairPriceConstant, endDate);
+
+            string report = GenerateReport(dataPoints, genesisDate, exponent, fairPriceConstant, rSquared, logDeltaGB, logPrices, sumX, sumY, sumXY, sumX2, sumY2);
+            logText += report;
+
+            var priceDict = dates.Zip(prices, (d, p) => new { d, p }).GroupBy(x => x.d).ToDictionary(g => g.Key, g => g.First().p);
+            var supportPriceDict = dates.Zip(supportPrices, (d, sp) => new { d, sp }).GroupBy(x => x.d).ToDictionary(g => g.Key, g => g.First().sp);
+            var resistancePriceDict = dates.Zip(resistancePrices, (d, rp) => new { d, rp }).GroupBy(x => x.d).ToDictionary(g => g.Key, g => g.First().rp);
+            var fairPriceDict = dates.Zip(fairPrices, (d, fp) => new { d, fp }).GroupBy(x => x.d).ToDictionary(g => g.Key, g => g.First().fp);
+
+            return (logText, rValue, priceDict, supportPriceDict, resistancePriceDict, fairPriceDict);
+        }
+
+        public static string GenerateReport(List<DataPoint> dataPoints, DateTime genesisDate, double exponent, double fairPriceConstant, double rSquared, List<double> logDeltaGB, List<double> logPrices, double sumX, double sumY, double sumXY, double sumX2, double sumY2)
+        {
+            var report = new StringBuilder();
+
+            // Preprocessing Steps
+            report.AppendLine("### Data Preprocessing");
+            report.AppendLine("- Data Source: CoinCodex for majority of historical data and real time data");
+            report.AppendLine($"- Timeframe: {genesisDate:yyyy-MM-dd} to {dataPoints.Max(dp => dp.Timestamp):yyyy-MM-dd}");
+            report.AppendLine("- Preprocessing Steps:");
+            report.AppendLine("  1. Filtered out data points with non-positive prices.");
+            report.AppendLine("  2. Calculated the difference in days from the genesis date (deltaGB).");
+            report.AppendLine("  3. Applied log transformation to deltaGB and prices.");
+
+            // Calculation Methodology
+            report.AppendLine("\n### Calculation Methodology");
+            report.AppendLine("- Log-Log Regression:");
+            report.AppendLine("  - Formula: log(y) = a * log(x) + b");
+            report.AppendLine("  - a (Exponent): Calculated as (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)");
+            report.AppendLine("  - b (Intercept): Calculated as (sumY - a * sumX) / n");
+            report.AppendLine("  - rSquared: Calculated to measure goodness of fit");
+            report.AppendLine("  - Fair Price Constant: exp(b)");
+            report.AppendLine("- Support and Resistance Lines:");
+            report.AppendLine("  - Support Price: fairPrice * 10^-0.25");
+            report.AppendLine("  - Resistance Price: fairPrice * 10^0.25");
+
+            // Regression Constants
+            report.AppendLine("\n### Regression Constants");
+            report.AppendLine($"- sumX: {sumX}");
+            report.AppendLine($"- sumY: {sumY}");
+            report.AppendLine($"- sumXY: {sumXY}");
+            report.AppendLine($"- sumX2: {sumX2}");
+            report.AppendLine($"- sumY2: {sumY2}");
+            report.AppendLine($"- Slope (Exponent): {exponent}");
+            report.AppendLine($"- Intercept: {Math.Exp(fairPriceConstant)}");
+            report.AppendLine($"- rSquared: {rSquared}");
+            report.AppendLine($"- Fair Price Constant: {fairPriceConstant}");
+
+            // Summary of Key Findings and Insights
+            report.AppendLine("\n### Summary of Key Findings and Insights");
+            report.AppendLine("Kaspa is the only other crypto asset besides Bitcoin to follow a power law. This indicates that Kaspa shares unique properties with Bitcoin, suggesting a fundamental value similar to that of Bitcoin. Kaspa follows Satoshi's vision by generalizing Nakamoto consensus, which allows for more scalable and efficient decentralized consensus mechanisms. This makes Kaspa a unique and innovative project in the crypto space already with several real world projects ready to use Kaspa once zk_opcode is released.");
+
+            // Full Dataset
+            report.AppendLine($"\n### Full Dataset with {dataPoints.Count} unique data points");
+            report.AppendLine("Timestamp,Price,Hashrate");
+            foreach (var point in dataPoints)
+            {
+                report.AppendLine($"{point.Timestamp:yyyy-MM-dd HH:mm:ss},{point.Price},{point.Hashrate}");
+            }
+
+            return report.ToString();
+        }
+
+
     }
 
     public class DataPoint
