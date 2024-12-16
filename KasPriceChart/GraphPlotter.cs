@@ -593,31 +593,26 @@ namespace KasPriceChart
 
                     // Ensure the value is positive and above the minimum threshold for logarithmic scales
                     double centerYValueValid = Math.Max(centerYValue, yAxis.Minimum);
-                    double maximumAutoSize = Math.Max(yAxis.MaximumAutoSize, yAxis.Minimum);
-                    double viewMinValid = Math.Max(yAxis.ScaleView.ViewMinimum, yAxis.Minimum);
-                    double viewMaxValid = Math.Max(yAxis.ScaleView.ViewMaximum, yAxis.Minimum);
 
-                    if (centerYValueValid > 0 && viewMinValid > 0 && viewMaxValid > 0)
+                    if (centerYValueValid > 0)
                     {
                         double logCenterYValue = Math.Log10(centerYValueValid);
-                        double logViewMin = Math.Log10(viewMinValid);
-                        double logViewMax = Math.Log10(viewMaxValid);
-                        double logMaxAutoSize = Math.Log10(maximumAutoSize);
+                        double logViewMin = Math.Log10(Math.Max(yAxis.ScaleView.ViewMinimum, yAxis.Minimum));
+                        double logViewMax = Math.Log10(Math.Max(yAxis.ScaleView.ViewMaximum, yAxis.Minimum));
 
-                        // Adjust zoom out factor for logarithmic scale to control zooming more precisely using percentages
-                        double adjustedZoomOutFactor = zoomIn ? zoomFactor : 1 / (1 + (zoomFactor - 1) / 10); // Smaller steps for zooming out
+                        // Adjust zoom out factor for logarithmic scale
+                        double adjustedZoomOutFactor = zoomIn ? zoomFactor : 1 / (1 + (zoomFactor - 1) / 10);
 
-                        // Step calculation based on percentages
+                        // Calculate new log positions
                         posYStart = Math.Pow(10, logCenterYValue - (logCenterYValue - logViewMin) * adjustedZoomOutFactor);
-                        posYFinish = Math.Pow(10, logCenterYValue + (logMaxAutoSize - logCenterYValue) * adjustedZoomOutFactor);
+                        posYFinish = Math.Pow(10, logCenterYValue + (logViewMax - logCenterYValue) * adjustedZoomOutFactor);
 
                         // Ensure calculated positions remain within valid range
                         posYStart = Math.Max(yAxis.Minimum, posYStart);
-                        posYFinish = Math.Min(yAxis.Maximum, posYFinish); // Ensure posYFinish is not below minimum
+                        posYFinish = Math.Min(yAxis.Maximum, posYFinish);
                     }
                     else
                     {
-                        // Handle cases where values are not valid for log scale
                         posYStart = yAxis.ScaleView.ViewMinimum;
                         posYFinish = yAxis.ScaleView.ViewMaximum;
                     }
@@ -642,7 +637,7 @@ namespace KasPriceChart
                     yAxis.ScaleView.Zoom(posYStart, posYFinish);
                 }
 
-                // Dynamically update axis intervals using your method
+                // Dynamically update axis intervals
                 SetAutoAxisIntervals(chart);
 
                 // Redraw the chart
@@ -655,6 +650,7 @@ namespace KasPriceChart
                 System.Diagnostics.Debug.WriteLine($"Error during zooming: {ex.Message}");
             }
         }
+
 
 
 
