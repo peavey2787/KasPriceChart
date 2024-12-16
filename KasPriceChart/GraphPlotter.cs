@@ -125,6 +125,8 @@ namespace KasPriceChart
             // Format y-axis labels to show values with 4 decimal places
             chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";
 
+            chart.ChartAreas[0].AxisY.MajorGrid.LineColor = Color.White;
+
             TurnPanningOn(chart);
         }
         #endregion
@@ -188,7 +190,6 @@ namespace KasPriceChart
 
             chart.Invalidate();
         }
-
 
         private void UpdateChartWithPowerLawCore(Chart chart, List<DataPoint> dataPoints, bool logOrLinear, Color lineColor, int extendLines, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices)
         {
@@ -362,6 +363,7 @@ namespace KasPriceChart
             if (e.Button == MouseButtons.Left)
             {
                 chart.Cursor = Cursors.Hand;
+                SetAutoAxisIntervals(chart);
             }
             else if (e.Button == MouseButtons.Right)
             {
@@ -518,7 +520,6 @@ namespace KasPriceChart
             chart.Update();
         }
 
-
         private Series CreateSeries(string name, Color color, bool powerLawLines = false)
         {
             if (!powerLawLines)
@@ -651,26 +652,34 @@ namespace KasPriceChart
             }
         }
 
-
-
-
         private void SetAutoAxisIntervals(Chart chart)
         {
             var xAxis = chart.ChartAreas[0].AxisX;
+            var yAxis = chart.ChartAreas[0].AxisY;
 
             // Set IntervalAutoMode to VariableCount for automatic intervals
             xAxis.IntervalAutoMode = IntervalAutoMode.VariableCount;
+            yAxis.IntervalAutoMode = IntervalAutoMode.VariableCount;
 
             // Optionally disable manually set intervals
             xAxis.Interval = 0;
 
             // Ensure labels are enabled and auto-fitting is allowed
             xAxis.LabelStyle.Enabled = true;
-            xAxis.IsLabelAutoFit = true;
+            yAxis.LabelStyle.Enabled = true;
 
-            // Optionally set label format for better readability
+            xAxis.IsLabelAutoFit = true;
+            yAxis.IsLabelAutoFit = true;
+
+            // Set label format for better readability
             xAxis.LabelStyle.Format = "MMM dd-yy\nhh:mm tt";
+            yAxis.LabelStyle.Format = "F4"; // Format Y-axis labels to 4 decimal places
+
+            // Manually set Y-axis interval if needed
+            double yRange = yAxis.Maximum - yAxis.Minimum;
+            yAxis.Interval = yRange / 20; // Adjust this value as needed for more frequent labels
         }
+
 
 
         #endregion
