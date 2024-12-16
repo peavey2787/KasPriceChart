@@ -125,8 +125,6 @@ namespace KasPriceChart
             // Format y-axis labels to show values with 4 decimal places
             chart.ChartAreas[0].AxisY.LabelStyle.Format = "F4";
 
-            chart.ChartAreas[0].AxisY.MajorGrid.LineColor = Color.White;
-
             TurnPanningOn(chart);
         }
         #endregion
