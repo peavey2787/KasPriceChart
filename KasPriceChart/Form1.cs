@@ -613,14 +613,16 @@ namespace KasPriceChart
             // Update the time with the current time to get real-time data
             endDate = endDate.Date + DateTime.Now.TimeOfDay;
 
-            // Filter data points for selected view
-            string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
-            List<DataPoint> dataPoints = DataManager.FilterDataPointsForView(_dataManager.GetData(), selectedTimespan);
-            dataPoints = DataManager.FilterDataPointsByDateRange(dataPoints, startDate, endDate);
+            List<DataPoint> dataPoints = _dataManager.GetData();
 
             // Get latest data and update labels
             var latestData = DataManager.GetLatestData(dataPoints);
             UpdateCurrentLabels(latestData.latestPrice, latestData.latestHashrate, latestData.latestTimestamp);
+
+            // Filter data points for selected view
+            string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
+            dataPoints = DataManager.FilterDataPointsForView(_dataManager.GetData(), selectedTimespan);
+            dataPoints = DataManager.FilterDataPointsByDateRange(dataPoints, startDate, endDate);
 
             // Update the chart
             if (showPowerLawLines)
