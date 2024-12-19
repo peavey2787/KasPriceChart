@@ -681,7 +681,7 @@ namespace KasPriceChart
                 lblCurrentHashrate.Text = "Error Fetching Hashrate";
             }
             
-            lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:dd-MM-yyyy hh:mm:ss tt}";
+            lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:MMM dd-yy hh:mm:ss tt}";
         }
 
         private int GetExtendLinesValue()

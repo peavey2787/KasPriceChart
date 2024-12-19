@@ -528,7 +528,7 @@ namespace KasPriceChart
                     Color = color,
                     MarkerStyle = MarkerStyle.Circle,
                     MarkerSize = _dataPointSize,
-                    ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
+                    ToolTip = "#VALX{MMM dd-yy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
                     IsXValueIndexed = false
                 };
             }
@@ -539,7 +539,7 @@ namespace KasPriceChart
                 Color = color,
                 BorderDashStyle = ChartDashStyle.Dash,
                 BorderWidth = 2,
-                ToolTip = "#VALX{dd-MM-yyyy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
+                ToolTip = "#VALX{MMM dd-yy}\n#VALX{hh:mm:ss tt}\n#VALY{F4}",
                 IsXValueIndexed = false
             };
         }      
