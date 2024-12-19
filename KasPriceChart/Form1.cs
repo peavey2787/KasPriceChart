@@ -104,10 +104,9 @@ namespace KasPriceChart
             {
                 // Fetch data
                 await FetchData();
-                
+
                 // Reset countdown time to the interval
-                _countdownTime = int.TryParse(txtInterval.Text, out int interval) ? interval * 60 : MIN_TIME_BETWEEN_API_CALLS;
-                              
+                _countdownTime = int.TryParse(txtInterval.Text, out int interval) && (interval * 60 > MIN_TIME_BETWEEN_API_CALLS) ? interval * 60 : MIN_TIME_BETWEEN_API_CALLS;
             }
         }
         #endregion
