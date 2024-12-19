@@ -330,7 +330,7 @@ namespace KasPriceChart
             bool zoomIn = e.Delta > 0;
 
             // Add debounce to limit frequency of zoom operations
-            if ((DateTime.Now - _lastZoomTime).TotalMilliseconds > 100) // Adjust threshold as needed
+            if ((DateTime.Now - _lastZoomTime).TotalMilliseconds > 300) // Adjust threshold as needed
             {
                 ZoomChart(chart, zoomFactor, zoomIn);
                 _lastZoomTime = DateTime.Now;
@@ -559,6 +559,7 @@ namespace KasPriceChart
             var yAxis = chart.ChartAreas[0].AxisY;
 
             double minZoomSize = 0.0001; // Minimum zoom size to prevent excessive zoom-in
+            double maxZoomSize = double.MaxValue; // Set to a large value or a specific limit you prefer
             double zoomOutFactor = 1 / zoomFactor; // Factor for zooming out
 
             try
@@ -582,6 +583,14 @@ namespace KasPriceChart
                 // Enforce axis bounds for X-axis
                 posXStart = Math.Max(xAxis.Minimum, posXStart);
                 posXFinish = Math.Min(xAxis.Maximum, posXFinish);
+
+                // Prevent excessive zoom out
+                double xRange = posXFinish - posXStart;
+                if (xRange > maxZoomSize)
+                {
+                    posXStart = xCenter - maxZoomSize / 2;
+                    posXFinish = xCenter + maxZoomSize / 2;
+                }
 
                 double posYStart, posYFinish;
 
@@ -629,6 +638,14 @@ namespace KasPriceChart
                     posYFinish = Math.Min(yAxis.Maximum, posYFinish);
                 }
 
+                // Prevent excessive zoom out for Y-axis
+                double yRange = posYFinish - posYStart;
+                if (yRange > maxZoomSize)
+                {
+                    posYStart = yCenter - maxZoomSize / 2;
+                    posYFinish = yCenter + maxZoomSize / 2;
+                }
+
                 // Ensure zoom size does not fall below the minimum threshold
                 if ((posXFinish - posXStart) > minZoomSize && (posYFinish - posYStart) > minZoomSize)
                 {
@@ -649,6 +666,7 @@ namespace KasPriceChart
                 System.Diagnostics.Debug.WriteLine($"Error during zooming: {ex.Message}");
             }
         }
+
 
         private void SetAutoAxisIntervals(Chart chart)
         {
