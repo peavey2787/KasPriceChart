@@ -569,7 +569,7 @@ namespace KasPriceChart
             var zoomSpeed = AppSettings.Load<int>("ZoomSpeed");
             if (zoomSpeed != null)
             {
-                trackBarDataPointSize.Value = zoomSpeed;
+                trackBarZoomSpeed.Value = zoomSpeed;
                 _graphPlotter.ChangeZoomSpeed(zoomSpeed);
             }
 
