@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="AppSettings.cs" />
     <Compile Include="CSVHandler.cs" />
+    <Compile Include="CustomControls.cs" />
     <Compile Include="DataFetcher.cs" />
     <Compile Include="DataManager.cs" />
     <Compile Include="Form1.cs">

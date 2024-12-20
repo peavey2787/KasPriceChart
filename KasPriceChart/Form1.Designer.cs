@@ -57,6 +57,8 @@
             this.tabPagePrice = new System.Windows.Forms.TabPage();
             this.btnShowSettingsBox = new System.Windows.Forms.Button();
             this.groupBoxSettings = new System.Windows.Forms.GroupBox();
+            this.lblZoomSpeed = new System.Windows.Forms.Label();
+            this.trackBarZoomSpeed = new KasPriceChart.CustomControls.NoWheelTrackBar();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.dateTimePickerEnd = new System.Windows.Forms.DateTimePicker();
@@ -82,6 +84,7 @@
             this.tabControl1.SuspendLayout();
             this.tabPagePrice.SuspendLayout();
             this.groupBoxSettings.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarZoomSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarDataPointSize)).BeginInit();
             this.tabPageHashrate.SuspendLayout();
             this.SuspendLayout();
@@ -330,6 +333,8 @@
             // groupBoxSettings
             // 
             this.groupBoxSettings.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(31)))), ((int)(((byte)(32)))));
+            this.groupBoxSettings.Controls.Add(this.lblZoomSpeed);
+            this.groupBoxSettings.Controls.Add(this.trackBarZoomSpeed);
             this.groupBoxSettings.Controls.Add(this.label2);
             this.groupBoxSettings.Controls.Add(this.label1);
             this.groupBoxSettings.Controls.Add(this.dateTimePickerEnd);
@@ -345,9 +350,29 @@
             this.groupBoxSettings.Controls.Add(this.lblExtendLines);
             this.groupBoxSettings.Location = new System.Drawing.Point(39, 3);
             this.groupBoxSettings.Name = "groupBoxSettings";
-            this.groupBoxSettings.Size = new System.Drawing.Size(356, 151);
+            this.groupBoxSettings.Size = new System.Drawing.Size(356, 189);
             this.groupBoxSettings.TabIndex = 4;
             this.groupBoxSettings.TabStop = false;
+            // 
+            // lblZoomSpeed
+            // 
+            this.lblZoomSpeed.AutoSize = true;
+            this.lblZoomSpeed.Location = new System.Drawing.Point(16, 148);
+            this.lblZoomSpeed.Name = "lblZoomSpeed";
+            this.lblZoomSpeed.Size = new System.Drawing.Size(68, 13);
+            this.lblZoomSpeed.TabIndex = 28;
+            this.lblZoomSpeed.Text = "Zoom Speed";
+            // 
+            // trackBarZoomSpeed
+            // 
+            this.trackBarZoomSpeed.Location = new System.Drawing.Point(7, 116);
+            this.trackBarZoomSpeed.Maximum = 5;
+            this.trackBarZoomSpeed.Minimum = 1;
+            this.trackBarZoomSpeed.Name = "trackBarZoomSpeed";
+            this.trackBarZoomSpeed.Size = new System.Drawing.Size(81, 45);
+            this.trackBarZoomSpeed.TabIndex = 27;
+            this.trackBarZoomSpeed.Value = 3;
+            this.trackBarZoomSpeed.ValueChanged += new System.EventHandler(this.trackBarZoomSpeed_ValueChanged);
             // 
             // label2
             // 
@@ -565,6 +590,7 @@
             this.tabPagePrice.PerformLayout();
             this.groupBoxSettings.ResumeLayout(false);
             this.groupBoxSettings.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBarZoomSpeed)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarDataPointSize)).EndInit();
             this.tabPageHashrate.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -612,6 +638,8 @@
         private System.Windows.Forms.DateTimePicker dateTimePickerEnd;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lblZoomSpeed;
+        private CustomControls.NoWheelTrackBar trackBarZoomSpeed;
     }
 }
 

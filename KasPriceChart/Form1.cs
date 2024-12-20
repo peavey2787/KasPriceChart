@@ -24,7 +24,7 @@ namespace KasPriceChart
         private DateTime _ogEndTime;
         private int _countdownTime;
         private bool appInControl = false;
-        private bool _fetchingData = false;        
+        private bool _fetchingData = false;
         #endregion
 
 
@@ -47,7 +47,7 @@ namespace KasPriceChart
             btnStart.Tag = "start";
             LoadLastFetchTime();
 
-            toolTip1.SetToolTip(chkUseOnlyUploadedData, "When checked the chart will only use the imported data set, but BE WARNED: Keep this ckecked if you don't want it to overwrite your main data set (master.csv)");            
+            toolTip1.SetToolTip(chkUseOnlyUploadedData, "When checked the chart will only use the imported data set, but BE WARNED: Keep this ckecked if you don't want it to overwrite your main data set (master.csv)");
             toolTip1.SetToolTip(btnImport, "Import custom data sets to merge with your current data set (master.csv) and continue adding real-time data or optionally just use the imported data");
             toolTip1.SetToolTip(btnExport, "Export your current data set (master.csv) to be used later (The data points exported depend on the drop down value selected)");
             toolTip1.SetToolTip(lblInterval, "The time it takes between attempts to get new real-time data");
@@ -61,7 +61,7 @@ namespace KasPriceChart
             appInControl = true;
 
             string masterFilePath = Path.Combine(Directory.GetCurrentDirectory(), "master.csv");
-            
+
             if (CSVHandler.MasterFileExists(masterFilePath))
             {
                 var dataPoints = CSVHandler.ImportData(new[] { masterFilePath });
@@ -78,7 +78,7 @@ namespace KasPriceChart
             }
 
             // Reload last saved state for controls
-            
+
             LoadControlStates();
 
             // Auto start if enabled
@@ -103,17 +103,19 @@ namespace KasPriceChart
             if (_countdownTime <= 0)
             {
                 // Fetch data
-                await FetchData();
-
-                // Reset countdown time to the interval
-                _countdownTime = int.TryParse(txtInterval.Text, out int interval) && (interval * 60 > MIN_TIME_BETWEEN_API_CALLS) ? interval * 60 : MIN_TIME_BETWEEN_API_CALLS;
+                if (await FetchData())
+                {
+                    // Reset countdown time to the interval
+                    _countdownTime = int.TryParse(txtInterval.Text, out int interval) && (interval * 60 > MIN_TIME_BETWEEN_API_CALLS) ? interval * 60 : MIN_TIME_BETWEEN_API_CALLS;
+                }
+                else { _countdownTime = 5; }
             }
         }
         #endregion
 
 
         #region User Action Controls
-        
+
 
         #region Button Clicks
         private async void btnStart_Click(object sender, EventArgs e)
@@ -184,7 +186,7 @@ namespace KasPriceChart
 
                     SetDatePickers(uploadedDataPoints);
                 }
-                
+
                 // Select All Data 
                 cmbViewTimspan.SelectedIndex = 0;
 
@@ -261,7 +263,7 @@ namespace KasPriceChart
             if (!appInControl)
             {
                 SaveControlStates();
-            }            
+            }
         }
 
         private void chkAutoStart_CheckedChanged(object sender, EventArgs e)
@@ -277,12 +279,12 @@ namespace KasPriceChart
             if (!appInControl)
             {
                 SaveControlStates();
-                chkLogLinear.Checked = chkPowerLawLines.Checked;                
+                chkLogLinear.Checked = chkPowerLawLines.Checked;
                 btnShowMore.Visible = chkPowerLawLines.Checked;
                 lblRValue.Visible = chkPowerLawLines.Checked;
                 ShowTheChart();
                 _graphPlotter.ResetZoom();
-            } 
+            }
             else
             {
                 chkLogLinear.Checked = true;
@@ -393,11 +395,7 @@ namespace KasPriceChart
         #endregion
 
 
-        private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            
-        }
-
+        #region Trackbars
         private void trackBarDataPointSize_ValueChanged(object sender, EventArgs e)
         {
             if (!appInControl)
@@ -410,7 +408,19 @@ namespace KasPriceChart
                 SaveControlStates();
             }
         }
+        private void trackBarZoomSpeed_ValueChanged(object sender, EventArgs e)
+        {
+            if (!appInControl)
+            {
+                double zoomSpeed = GetZoomLevel(trackBarZoomSpeed.Value);
+                _graphPlotter.ChangeZoomSpeed(zoomSpeed);
+                SaveControlStates();
+            }
+        }
 
+        #endregion
+
+        #region DateTimePickers
         private async void dateTimePickerStart_ValueChanged(object sender, EventArgs e)
         {
             if (!appInControl)
@@ -421,10 +431,16 @@ namespace KasPriceChart
 
         private async void dateTimePickerEnd_ValueChanged(object sender, EventArgs e)
         {
-            if(!appInControl)
+            if (!appInControl)
             {
                 await FetchData();
-            }            
+            }
+        }
+        #endregion
+
+        private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
         #endregion
 
@@ -513,7 +529,8 @@ namespace KasPriceChart
             AppSettings.Save("LogOrLinear", chkLogLinear.Checked);
             AppSettings.Save("ExtendLinesByDays", txtExtendLines.Text);
             AppSettings.Save("DataPointSize", trackBarDataPointSize.Value);
-            AppSettings.Save("TimeSpanView", cmbViewTimspan.Text);            
+            AppSettings.Save("ZoomSpeed", trackBarZoomSpeed.Value);
+            AppSettings.Save("TimeSpanView", cmbViewTimspan.Text);
         }
 
         private void LoadControlStates()
@@ -549,6 +566,13 @@ namespace KasPriceChart
                 _graphPlotter.ChangeDataPointSize(parsedDPSize);
             }
 
+            var zoomSpeed = AppSettings.Load<int>("ZoomSpeed");
+            if (zoomSpeed != null)
+            {
+                trackBarDataPointSize.Value = zoomSpeed;
+                _graphPlotter.ChangeZoomSpeed(zoomSpeed);
+            }
+
             var timespanView = AppSettings.Load<string>("TimeSpanView");
             if (!string.IsNullOrEmpty(timespanView))
             {
@@ -558,10 +582,10 @@ namespace KasPriceChart
             var showOrHideSettings = AppSettings.Load<string>("ShowOrHideSettings");
 
             // If different than default, click the button
-            if (!string.IsNullOrEmpty(showOrHideSettings) && showOrHideSettings == ">" )
+            if (!string.IsNullOrEmpty(showOrHideSettings) && showOrHideSettings == ">")
             {
                 ToggleSettingsBox();
-            } 
+            }
 
         }
 
@@ -627,7 +651,7 @@ namespace KasPriceChart
             if (showPowerLawLines)
             {
                 var genesisDate = new DateTime(2021, 11, 7);
-                var powerLawData = await Task.Run(()=> DataManager.PreparePowerLawData(dataPoints, genesisDate, GetExtendLinesValue()));
+                var powerLawData = await Task.Run(() => DataManager.PreparePowerLawData(dataPoints, genesisDate, GetExtendLinesValue()));
                 _graphPlotter.UpdatePriceWithPowerLaw(dataPoints, logOrLinear, GetExtendLinesValue(), powerLawData.supportPrices, powerLawData.resistancePrices, powerLawData.fairPrices);
 
                 richTextBoxLog.Clear();
@@ -666,21 +690,21 @@ namespace KasPriceChart
         {
             if (latestPrice > 0)
             {
-                lblCurrentPrice.Text = $"Price: ${latestPrice:F4}"; 
-            } 
-            else 
-            {
-                lblCurrentPrice.Text = "Error Fetching Price"; 
-            } 
-            if (latestHashrate > 0) 
-            { 
-                lblCurrentHashrate.Text = $"Hashrate: {GraphPlotter.FormatHashrateGetNumber(latestHashrate)} {GraphPlotter.FormatHashrateGetLabel(latestHashrate)}"; 
-            } 
+                lblCurrentPrice.Text = $"Price: ${latestPrice:F4}";
+            }
             else
-            { 
+            {
+                lblCurrentPrice.Text = "Error Fetching Price";
+            }
+            if (latestHashrate > 0)
+            {
+                lblCurrentHashrate.Text = $"Hashrate: {GraphPlotter.FormatHashrateGetNumber(latestHashrate)} {GraphPlotter.FormatHashrateGetLabel(latestHashrate)}";
+            }
+            else
+            {
                 lblCurrentHashrate.Text = "Error Fetching Hashrate";
             }
-            
+
             lblLastTimeStamp.Text = $"Last Update: {latestTimestamp:MMM dd-yy hh:mm:ss tt}";
         }
 
@@ -723,14 +747,34 @@ namespace KasPriceChart
             return extendLines;
         }
 
+        public double GetZoomLevel(int value)
+        {
+            switch (value)
+            {
+                case 1:
+                    return 0.9;
+                case 2:
+                    return 0.7;
+                case 3:
+                    return 0.5;
+                case 4:
+                    return 0.3;
+                case 5:
+                    return 0.1;
+                default:
+                    return 0.5; // Default value in case of unexpected values
+            }
+        }
+
+
+
+
+
 
 
 
 
         #endregion
-
-
-
 
 
     }

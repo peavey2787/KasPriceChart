@@ -30,7 +30,7 @@ namespace KasPriceChart
         private double _xPanStartMax;
         private double _yPanStartMin;
         private double _yPanStartMax;
-
+        private double _zoomSpeed;
         private int _dataPointSize;
         #endregion
 
@@ -40,6 +40,7 @@ namespace KasPriceChart
         {
             // Defaults
             _dataPointSize = 5;
+            _zoomSpeed = 0.9;
 
             // Set charts
             _priceChart = priceChart;
@@ -316,7 +317,10 @@ namespace KasPriceChart
             _dataPointSize = newSize;
             ChangeDataPointSizeInChart(_priceChart, _dataPointSize);
         }
-
+        public void ChangeZoomSpeed(double newSpeed)
+        {
+            _zoomSpeed = newSpeed;
+        }
         #endregion
 
 
@@ -326,7 +330,7 @@ namespace KasPriceChart
         private void Chart_MouseWheel(object sender, MouseEventArgs e)
         {
             var chart = (Chart)sender;
-            double zoomFactor = 0.9;
+            double zoomFactor = _zoomSpeed; // 0.9
             bool zoomIn = e.Delta > 0;
 
             // Add debounce to limit frequency of zoom operations
