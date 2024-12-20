@@ -567,11 +567,10 @@ namespace KasPriceChart
             }
 
             var zoomSpeed = AppSettings.Load<int>("ZoomSpeed");
-            if (zoomSpeed != null)
-            {
-                trackBarZoomSpeed.Value = zoomSpeed;
-                _graphPlotter.ChangeZoomSpeed(zoomSpeed);
-            }
+            if (zoomSpeed == 0) { zoomSpeed = 3; }            
+            trackBarZoomSpeed.Value = zoomSpeed;
+            _graphPlotter.ChangeZoomSpeed(zoomSpeed);
+            
 
             var timespanView = AppSettings.Load<string>("TimeSpanView");
             if (!string.IsNullOrEmpty(timespanView))
