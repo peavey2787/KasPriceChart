@@ -403,7 +403,6 @@ namespace KasPriceChart
             }
             catch (Exception ex)
             {
-                logText += $"Error extracting significant digits and exponent: {ex.Message}\n";
             }
 
             rValue = string.Format(
@@ -413,8 +412,6 @@ namespace KasPriceChart
                 exponent,
                 formattedFairPriceConstant
             );
-
-            logText += $"Regression Constants:\nExponent: {exponent}\nFair Price Constant: {fairPriceConstant}\n\n";
 
             DateTime latestDate = dataPoints.Max(dp => dp.Timestamp);
             DateTime endDate = latestDate.AddDays(extendLines);
