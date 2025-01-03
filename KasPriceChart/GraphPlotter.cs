@@ -217,7 +217,6 @@ namespace KasPriceChart
                         seriesData.Points.AddXY(point.Timestamp, point.Price);
                     }
                 }
-
             }
 
             chart.Series.Add(seriesData);
@@ -228,10 +227,16 @@ namespace KasPriceChart
             double yMin = Math.Min(supportPrices.Values.Min(), Math.Min(resistancePrices.Values.Min(), fairPrices.Values.Min()));
             double yMax = Math.Max(supportPrices.Values.Max(), Math.Max(resistancePrices.Values.Max(), fairPrices.Values.Max()));
 
-            // Ensure the yMin is not less than 0
+            // Ensure yMin is not less than 0
             yMin = Math.Max(yMin, 0.001);
 
-            // Set the y-axis range to prevent excessive zooming out
+            // Ensure yMin is less than yMax to avoid InvalidOperationException
+            if (yMin >= yMax)
+            {
+                yMax = yMin + 1; // Set yMax slightly higher if yMin is not less than yMax
+            }
+
+            // Set the y-axis range
             chart.ChartAreas[0].AxisY.Minimum = yMin;
             chart.ChartAreas[0].AxisY.Maximum = yMax;
 
@@ -275,7 +280,9 @@ namespace KasPriceChart
 
             chart.Invalidate();
         }
-        
+
+
+
         #endregion
 
 

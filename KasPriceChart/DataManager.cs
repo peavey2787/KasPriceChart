@@ -267,24 +267,7 @@ namespace KasPriceChart
                 throw new InvalidOperationException("Empty deltaGB or prices array");
             }
 
-            const double THRESHOLD = 1e-6;
-
-            var logDeltaGB = deltaGB.Select((x, index) =>
-            {
-                return Math.Log(x);
-            }).ToList();
-
-            var logPrices = prices.Select((x, index) =>
-            {
-                return Math.Log(x);
-            }).ToList();
-
-            if (logDeltaGB.Count == 0 || logPrices.Count == 0)
-            {
-                throw new InvalidOperationException("Log values are invalid, cannot proceed with regression");
-            }
-
-            var regression = LinearRegression(logDeltaGB, logPrices);
+            var regression = LinearRegression(deltaGB, prices);
 
             if (double.IsNaN(regression.slope) || double.IsNaN(regression.intercept))
             {
@@ -294,85 +277,40 @@ namespace KasPriceChart
             return (exponent: regression.slope, fairPriceConstant: Math.Exp(regression.intercept), rSquared: regression.rSquared, sumX: regression.sumX, sumY: regression.sumY, sumXY: regression.sumXY, sumX2: regression.sumX2, sumY2: regression.sumY2);
         }
 
-        private static (double slope, double intercept, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) LinearRegression(List<double> x, List<double> y)
+        public static (double slope, double intercept, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) LinearRegression(List<double> xValues, List<double> yValues)
         {
-            int n = x.Count;
-            if (n != y.Count)
+            if (xValues.Count != yValues.Count)
             {
-                throw new ArgumentException("Arrays x and y must have the same length");
+                throw new ArgumentException("The number of x values must match the number of y values.");
             }
 
-            double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+            int n = xValues.Count;
+
+            double sumX = 0;
+            double sumY = 0;
+            double sumXY = 0;
+            double sumX2 = 0;
+            double sumY2 = 0;
 
             for (int i = 0; i < n; i++)
             {
-                sumX += x[i];
-                sumY += y[i];
-                sumXY += x[i] * y[i];
-                sumX2 += x[i] * x[i];
-                sumY2 += y[i] * y[i];
+                double x = Math.Log(xValues[i]);
+                double y = Math.Log(yValues[i]);
+
+                sumX += x;
+                sumY += y;
+                sumXY += x * y;
+                sumX2 += x * x;
+                sumY2 += y * y;
             }
 
             double slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
             double intercept = (sumY - slope * sumX) / n;
-            double rSquared = Math.Pow((n * sumXY - sumX * sumY) / Math.Sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)), 2);
+            double rSquared = Math.Pow(n * sumXY - sumX * sumY, 2) / ((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
 
             return (slope, intercept, rSquared, sumX, sumY, sumXY, sumX2, sumY2);
         }
 
-        public static (double supportPrice, double resistancePrice, double fairPrice) CalculatePowerLawPrices(double exponent, double fairPriceConstant, DateTime genesisDate, DateTime currentDate)
-        {
-            double deltaGB = (currentDate - genesisDate).TotalDays;
-            double fairPrice = fairPriceConstant * Math.Pow(deltaGB, exponent);
-            double supportPrice = fairPrice * Math.Pow(10, -0.25); // adjust these constants to match the correctly calculated power law lines
-            double resistancePrice = fairPrice * Math.Pow(10, 0.25);
-
-            return (supportPrice, resistancePrice, fairPrice);
-        }
-
-        public static (List<DateTime> dates, List<double> prices, List<double> supportPrices, List<double> resistancePrices, List<double> fairPrices, List<double> logDeltaGB, List<double> logPrices) PreparePowerLawUpperAndLowerBands(DateTime genesisDate, List<DataPoint> dataPoints, double exponent, double supportPriceConstant, double resistancePriceConstant, double fairPriceConstant, DateTime endDate)
-        {
-            var dates = new List<DateTime>();
-            var prices = new List<double>();
-            var supportPrices = new List<double>();
-            var resistancePrices = new List<double>();
-            var fairPrices = new List<double>();
-            var logDeltaGB = new List<double>();
-            var logPrices = new List<double>();
-
-            foreach (var point in dataPoints)
-            {
-                var date = point.Timestamp;
-                var price = point.Price;
-
-                if (price > 0)
-                {
-                    dates.Add(date);
-
-                    double deltaGB = (date - genesisDate).TotalDays;
-                    supportPrices.Add(supportPriceConstant * Math.Pow(deltaGB, exponent));
-                    resistancePrices.Add(resistancePriceConstant * Math.Pow(deltaGB, exponent));
-                    fairPrices.Add(fairPriceConstant * Math.Pow(deltaGB, exponent));
-                    prices.Add(price);
-
-                    logDeltaGB.Add(Math.Log(deltaGB));
-                    logPrices.Add(Math.Log(price));
-                }
-            }
-
-            DateTime latestDate = dataPoints.Max(dp => dp.Timestamp);
-            for (DateTime futureDate = latestDate.AddDays(1); futureDate <= endDate; futureDate = futureDate.AddDays(1))
-            {
-                dates.Add(futureDate);
-
-                double deltaGB = (futureDate - genesisDate).TotalDays;
-                supportPrices.Add(supportPriceConstant * Math.Pow(deltaGB, exponent));
-                resistancePrices.Add(resistancePriceConstant * Math.Pow(deltaGB, exponent));
-                fairPrices.Add(fairPriceConstant * Math.Pow(deltaGB, exponent));
-            }
-
-            return (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices);
-        }
 
         public static (string logText, string rValue, Dictionary<DateTime, double> prices, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices) PreparePowerLawData(List<DataPoint> dataPoints, DateTime genesisDate, int extendLines)
         {
@@ -416,8 +354,8 @@ namespace KasPriceChart
             DateTime latestDate = dataPoints.Max(dp => dp.Timestamp);
             DateTime endDate = latestDate.AddDays(extendLines);
 
-            var (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices) = DataManager.PreparePowerLawUpperAndLowerBands(
-                genesisDate, dataPoints, exponent, fairPriceConstant * Math.Pow(10, -0.25), fairPriceConstant * Math.Pow(10, 0.25), fairPriceConstant, endDate);
+            var (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices) = PreparePowerLawUpperAndLowerBands(
+                genesisDate, dataPoints, exponent, fairPriceConstant, endDate);
 
             string report = GenerateReport(dataPoints, genesisDate, exponent, fairPriceConstant, rSquared, logDeltaGB, logPrices, sumX, sumY, sumXY, sumX2, sumY2);
             logText += report;
@@ -429,6 +367,68 @@ namespace KasPriceChart
 
             return (logText, rValue, priceDict, supportPriceDict, resistancePriceDict, fairPriceDict);
         }
+
+        public static (List<DateTime> dates, List<double> prices, List<double> supportPrices, List<double> resistancePrices, List<double> fairPrices, List<double> logDeltaGB, List<double> logPrices) PreparePowerLawUpperAndLowerBands(DateTime genesisDate, List<DataPoint> dataPoints, double exponent, double fairPriceConstant, DateTime endDate)
+        {
+            var dates = new List<DateTime>();
+            var prices = new List<double>();
+            var supportPrices = new List<double>();
+            var resistancePrices = new List<double>();
+            var fairPrices = new List<double>();
+            var logDeltaGB = new List<double>();
+            var logPrices = new List<double>();
+
+            foreach (var point in dataPoints)
+            {
+                var date = point.Timestamp;
+                var price = point.Price;
+
+                if (price > 0)
+                {
+                    dates.Add(date);
+
+                    double deltaGB = (date - genesisDate).TotalDays;
+
+                    // Verify and log calculation details for debugging
+                    double fairPrice = fairPriceConstant * Math.Pow(deltaGB, exponent);
+                    Console.WriteLine($"deltaGB: {deltaGB}, fairPriceConstant: {fairPriceConstant}, exponent: {exponent}, fairPrice: {fairPrice}");
+
+                    double supportPrice = fairPrice * Math.Pow(10, -0.25);
+                    double resistancePrice = fairPrice * Math.Pow(10, 0.25);
+
+                    supportPrices.Add(supportPrice);
+                    resistancePrices.Add(resistancePrice);
+                    fairPrices.Add(fairPrice);
+                    prices.Add(price);
+
+                    logDeltaGB.Add(Math.Log(deltaGB));
+                    logPrices.Add(Math.Log(price));
+                }
+            }
+
+            DateTime latestDate = dataPoints.Max(dp => dp.Timestamp);
+            for (DateTime futureDate = latestDate.AddDays(1); futureDate <= endDate; futureDate = futureDate.AddDays(1))
+            {
+                dates.Add(futureDate);
+
+                double deltaGB = (futureDate - genesisDate).TotalDays;
+
+                // Verify and log calculation details for debugging
+                double fairPrice = fairPriceConstant * Math.Pow(deltaGB, exponent);
+                Console.WriteLine($"Future deltaGB: {deltaGB}, fairPriceConstant: {fairPriceConstant}, exponent: {exponent}, fairPrice: {fairPrice}");
+
+                double supportPrice = fairPrice * Math.Pow(10, -0.25);
+                double resistancePrice = fairPrice * Math.Pow(10, 0.25);
+
+                supportPrices.Add(supportPrice);
+                resistancePrices.Add(resistancePrice);
+                fairPrices.Add(fairPrice);
+            }
+
+            return (dates, prices, supportPrices, resistancePrices, fairPrices, logDeltaGB, logPrices);
+        }
+
+
 
         public static string GenerateReport(List<DataPoint> dataPoints, DateTime genesisDate, double exponent, double fairPriceConstant, double rSquared, List<double> logDeltaGB, List<double> logPrices, double sumX, double sumY, double sumXY, double sumX2, double sumY2)
         {
@@ -446,11 +446,12 @@ namespace KasPriceChart
             // Calculation Methodology
             report.AppendLine("\n### Calculation Methodology");
             report.AppendLine("- Log-Log Regression:");
-            report.AppendLine("  - Formula: log(y) = a * log(x) + b");
-            report.AppendLine("  - a (Exponent): Calculated as (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)");
-            report.AppendLine("  - b (Intercept): Calculated as (sumY - a * sumX) / n");
+            report.AppendLine("  - Formula: log(y) = log(a) + b * log(x)");
+            report.AppendLine("  - b (Exponent): Calculated as (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)");
+            report.AppendLine("  - log(a) (Intercept): Calculated as (sumY - b * sumX) / n");
+            report.AppendLine("  - a: Calculated as exp((sumY - b * sumX) / n)");
             report.AppendLine("  - rSquared: Calculated to measure goodness of fit");
-            report.AppendLine("  - Fair Price Constant: exp(b)");
+            report.AppendLine("  - Fair Price Constant: exp(log(a))");
             report.AppendLine("- Support and Resistance Lines:");
             report.AppendLine("  - Support Price: fairPrice * 10^-0.25");
             report.AppendLine("  - Resistance Price: fairPrice * 10^0.25");
