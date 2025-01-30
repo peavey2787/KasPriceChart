@@ -235,17 +235,32 @@ namespace KasPriceChart
             return (latestPrice, latestHashrate, latestTimestamp);
         }
 
-        public static (double exponent, double fairPriceConstant, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) GetRegressionConstants(List<DataPoint> dataPoints, DateTime genesisDate)
+        public static (double exponent, double fairPriceConstant, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) GetRegressionConstants(List<DataPoint> dataPoints, DateTime genesisDate, bool priceChart)
         {
             var deltaGB = new List<double>();
-            var prices = new List<double>();
+            var values = new List<double>();
 
             if (dataPoints == null || dataPoints.Count == 0)
             {
                 return (double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN);
             }
 
-            var earliestDate = dataPoints.Min(dp => dp.Timestamp);
+            // Get the earliest date where the value (Price or Hashrate) is > 0
+            DateTime earliestDate = DateTime.MaxValue;
+            foreach (var point in dataPoints)
+            {
+                double value = priceChart ? point.Price : Math.Pow(point.Hashrate, 2);
+                if (value > 0 && point.Timestamp < earliestDate)
+                {
+                    earliestDate = point.Timestamp;
+                }
+            }
+
+            if (earliestDate == DateTime.MaxValue)
+            {
+                throw new InvalidOperationException("No valid data points with value > 0");
+            }
+
             if (genesisDate >= earliestDate)
             {
                 genesisDate = earliestDate.AddDays(-1); // Adjust genesisDate to be 1 day before the earliest data date
@@ -253,21 +268,22 @@ namespace KasPriceChart
 
             foreach (var point in dataPoints)
             {
+                double value = priceChart ? point.Price : Math.Pow(point.Hashrate, 2);
                 double delta = (point.Timestamp - genesisDate).TotalDays;
                 if (delta <= 0)
                 {
                     delta = 1; // Set to 1 day if delta is zero or negative
                 }
                 deltaGB.Add(delta);
-                prices.Add(point.Price);
+                values.Add(value);
             }
 
-            if (deltaGB.Count == 0 || prices.Count == 0)
+            if (deltaGB.Count == 0 || values.Count == 0)
             {
-                throw new InvalidOperationException("Empty deltaGB or prices array");
+                throw new InvalidOperationException("Empty deltaGB or values array");
             }
 
-            var regression = LinearRegression(deltaGB, prices);
+            var regression = LinearRegression(deltaGB, values);
 
             if (double.IsNaN(regression.slope) || double.IsNaN(regression.intercept))
             {
@@ -276,6 +292,8 @@ namespace KasPriceChart
 
             return (exponent: regression.slope, fairPriceConstant: Math.Exp(regression.intercept), rSquared: regression.rSquared, sumX: regression.sumX, sumY: regression.sumY, sumXY: regression.sumXY, sumX2: regression.sumX2, sumY2: regression.sumY2);
         }
+
+
 
         public static (double slope, double intercept, double rSquared, double sumX, double sumY, double sumXY, double sumX2, double sumY2) LinearRegression(List<double> xValues, List<double> yValues)
         {
@@ -312,7 +330,7 @@ namespace KasPriceChart
         }
 
 
-        public static (string logText, string rValue, Dictionary<DateTime, double> prices, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices) PreparePowerLawData(List<DataPoint> dataPoints, DateTime genesisDate, int extendLines)
+        public static (string logText, string rValue, Dictionary<DateTime, double> prices, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices) PreparePowerLawData(List<DataPoint> dataPoints, DateTime genesisDate, int extendLines, bool priceChart = true)
         {
             string logText = "";
             string rValue = "";
@@ -322,7 +340,7 @@ namespace KasPriceChart
                 return (logText, rValue, null, null, null, null);
             }
 
-            var (exponent, fairPriceConstant, rSquared, sumX, sumY, sumXY, sumX2, sumY2) = DataManager.GetRegressionConstants(dataPoints, genesisDate);
+            var (exponent, fairPriceConstant, rSquared, sumX, sumY, sumXY, sumX2, sumY2) = DataManager.GetRegressionConstants(dataPoints, genesisDate, priceChart);
 
             // Handle significant digits
             string significantDigits = "N/A";

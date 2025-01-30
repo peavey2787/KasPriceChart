@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
@@ -15,6 +16,8 @@ namespace KasPriceChart
     {
         #region Variables
         private const int MIN_TIME_BETWEEN_API_CALLS = 3;
+        private const int EXT_CHART_BUTTON_X = 10;
+        private const int EXT_CHART_BUTTON_Y = 20;
         private DataFetcher _dataFetcher;
         private DataManager _dataManager;
         private GraphPlotter _graphPlotter;
@@ -87,7 +90,10 @@ namespace KasPriceChart
                 btnStart.PerformClick();
             }
             ShowTheChart();
-            ShowTheHashrateChart();
+            //ShowTheHashrateChart(chkPowerLawLines.Checked, chkLogLinear.Checked);
+
+            // Set the location of btnShowSettingsBox
+            btnShowSettingsBox.Location = new Point(EXT_CHART_BUTTON_X, EXT_CHART_BUTTON_Y);
 
             appInControl = false;
         }
@@ -440,7 +446,46 @@ namespace KasPriceChart
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (tabControl1.SelectedTab == tabPageHashrate)
+            {
+                // Move the button to the second tab page
+                tabPageHashrate.Controls.Add(btnShowSettingsBox);
+                btnShowSettingsBox.Location = new Point(EXT_CHART_BUTTON_X, EXT_CHART_BUTTON_Y);
+                btnShowSettingsBox.BringToFront();
 
+                // Move chart settings
+                tabPageHashrate.Controls.Add(groupBoxSettings);
+                groupBoxSettings.BringToFront();
+
+                // Move r2 value info
+                tabPageHashrate.Controls.Add(lblRValue);
+                lblRValue.BringToFront();
+
+                // Move show more button
+                tabPageHashrate.Controls.Add(btnShowMore);
+                btnShowMore.BringToFront();
+            }
+            else if (tabControl1.SelectedTab == tabPagePrice)
+            {
+                // Move the button to the first tab page
+                tabPagePrice.Controls.Add(btnShowSettingsBox);
+                btnShowSettingsBox.Location = new Point(EXT_CHART_BUTTON_X, EXT_CHART_BUTTON_Y);
+                btnShowSettingsBox.BringToFront();
+
+                // Move chart settings
+                tabPagePrice.Controls.Add(groupBoxSettings);
+                groupBoxSettings.BringToFront();
+
+                // Move r2 value info
+                tabPagePrice.Controls.Add(lblRValue);
+                lblRValue.BringToFront();
+
+                // Move show more button
+                tabPagePrice.Controls.Add(btnShowMore);
+                btnShowMore.BringToFront();
+            }
+
+            ShowTheChart();
         }
         #endregion
 
@@ -470,6 +515,7 @@ namespace KasPriceChart
             {
                 // Show more
                 groupBoxSettings.Visible = true;
+                groupBoxSettings.BringToFront();
                 btnShowSettingsBox.Text = "<";
             }
         }
@@ -605,7 +651,7 @@ namespace KasPriceChart
             }
             else if (tabControl1.SelectedIndex == 1)
             {
-                ShowTheHashrateChart(false, false);
+                ShowTheHashrateChart(chkPowerLawLines.Checked, chkLogLinear.Checked);
             }
         }
 
@@ -664,7 +710,7 @@ namespace KasPriceChart
             }
         }
 
-        private void ShowTheHashrateChart(bool showPowerLawLines = false, bool logOrLinear = false)
+        private async void ShowTheHashrateChart(bool showPowerLawLines = false, bool logOrLinear = false)
         {
             // Filter data points for selected view
             string selectedTimespan = cmbViewTimspan.SelectedItem?.ToString() ?? "All Data";
@@ -677,7 +723,9 @@ namespace KasPriceChart
             // Update the chart
             if (showPowerLawLines)
             {
-                //_graphPlotter.UpdateHashrateWithPowerLaw(dataPoints, logOrLinear, GetExtendLinesValue());
+                var genesisDate = new DateTime(2021, 11, 7);
+                var powerLawData = await Task.Run(() => DataManager.PreparePowerLawData(dataPoints, genesisDate, GetExtendLinesValue(), false));
+                _graphPlotter.UpdateHashrateWithPowerLaw(dataPoints, logOrLinear, GetExtendLinesValue(), powerLawData.supportPrices, powerLawData.resistancePrices, powerLawData.fairPrices);
             }
             else
             {

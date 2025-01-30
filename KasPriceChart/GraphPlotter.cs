@@ -299,7 +299,7 @@ namespace KasPriceChart
 
         public void UpdateHashrateWithPowerLaw(List<DataPoint> dataPoints, bool logOrLinear, int extendLines, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices)
         {
-            //UpdateChartWithPowerLawCore(_hashrateChart, dataPoints, logOrLinear, _hashrateLineColor, extendLines, supportPrices, resistancePrices, fairPrices);
+            UpdateChartWithPowerLawCore(_hashrateChart, dataPoints, logOrLinear, _hashrateLineColor, extendLines, supportPrices, resistancePrices, fairPrices);
         }
 
         public void UpdatePriceWithPowerLaw(List<DataPoint> dataPoints, bool logOrLinear, int extendLines, Dictionary<DateTime, double> supportPrices, Dictionary<DateTime, double> resistancePrices, Dictionary<DateTime, double> fairPrices)

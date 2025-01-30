@@ -13,13 +13,35 @@ namespace KasPriceChart
             // Sort the data points by their timestamps before exporting
             data.Sort((dp1, dp2) => dp1.Timestamp.CompareTo(dp2.Timestamp));
 
-            using (StreamWriter writer = new StreamWriter(filePath))
+            string backupFilePath = filePath + ".backup";
+
+            try
             {
-                writer.WriteLine("Timestamp,Price,Hashrate");
-                foreach (var point in data)
+                // Create a backup of the master file
+                File.Copy(filePath, backupFilePath, true);
+
+                using (StreamWriter writer = new StreamWriter(filePath))
                 {
-                    writer.WriteLine($"{point.Timestamp},{point.Price},{point.Hashrate}");
+                    writer.WriteLine("Timestamp,Price,Hashrate");
+                    foreach (var point in data)
+                    {
+                        writer.WriteLine($"{point.Timestamp},{point.Price},{point.Hashrate}");
+                    }
                 }
+
+                // Delete the backup file after successful export
+                File.Delete(backupFilePath);
+            }
+            catch (Exception ex)
+            {
+                // Restore the backup if something goes wrong
+                if (File.Exists(backupFilePath))
+                {
+                    File.Copy(backupFilePath, filePath, true);
+                    File.Delete(backupFilePath);
+                }
+
+                MessageBox.Show($"Error exporting data: {ex.Message}");
             }
         }
 
